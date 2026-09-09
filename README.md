@@ -279,7 +279,7 @@ Ordeal's native dispatch produced the *identical* pass/fail pattern — the
 agent-framework wrapper added no safety net the raw model didn't already
 have.
 
-![Overall pass rate by model](docs/images/openrouter-overall-pass-rate.png)
+![Pass rate by model and scenario](docs/images/openrouter-model-scenario-heatmap.png)
 
 Full methodology, transcripts, the opencode integration, and the three engine
 bugs this run surfaced and
