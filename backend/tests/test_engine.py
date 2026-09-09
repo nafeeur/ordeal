@@ -43,3 +43,59 @@ def test_ledger_snapshots_and_hashes():
     assert out["final_state"]["x"]["n"]==2
     assert out["final_hash"]!=initial
     assert len(out["snapshots"])==2
+
+@pytest.mark.asyncio
+async def test_nested_path_lookup_update_create_matches_docs():
+    """The README / examples/enterprise-suite walkthrough documents simulation
+    configs shaped like {"op": "lookup", "path": "identity.users.{user_id}"}
+    and {"op": "update", "path": "...{service}...", "value_from": "version"} —
+    nested, templated paths rather than flat collection/key_arg pairs."""
+    sim=SimulationEngine()
+    t=sim.start_trial({
+        "identity":{"tokens":{"tok-1":{"owner":"u1","status":"active"}}},
+        "deployment":{"services":{"checkout-api":{"active_version":"v41"}}},
+        "audit":{"events":[]},
+    })
+    get_token={"name":"get_token","simulation":{"op":"lookup","path":"identity.tokens.{token_id}"}}
+    r=await sim.tool_call(t,get_token,{"token_id":"tok-1"},[],random.Random(1))
+    assert r=={"owner":"u1","status":"active"}
+
+    deploy={"name":"deploy_release","simulation":{"op":"update","path":"deployment.services.{service}.active_version","value_from":"version"}}
+    await sim.tool_call(t,deploy,{"service":"checkout-api","version":"v42"},[],random.Random(1))
+    assert t.state["deployment"]["services"]["checkout-api"]["active_version"]=="v42"
+
+    audit={"name":"write_audit_event","simulation":{"op":"create","path":"audit.events"}}
+    await sim.tool_call(t,audit,{"action":"deploy","version":"v42"},[],random.Random(1))
+    assert len(t.state["audit"]["events"])==1
+    assert t.state["audit"]["events"][0]["action"]=="deploy"
+
+@pytest.mark.asyncio
+async def test_openai_compatible_agent_includes_scenario_variables(monkeypatch):
+    from app import agent_runtime
+    from app.engine import SimulationEngine
+
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self): pass
+        def json(self):
+            return {"choices":[{"message":{"role":"assistant","content":"done"}}]}
+
+    class FakeClient:
+        def __init__(self, *a, **k): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): return False
+        async def post(self, url, headers=None, json=None):
+            captured["payload"] = json
+            return FakeResponse()
+
+    monkeypatch.setattr(agent_runtime.httpx, "AsyncClient", FakeClient)
+    sim = SimulationEngine()
+    trial = sim.start_trial({})
+    agent = {"endpoint": "https://openrouter.ai/api/v1", "model": "test/model", "tools": []}
+    scenario = {"instruction": "Refund the payment", "variables": {"payment_id": "p1"}}
+    result = await agent_runtime.run_openai_compatible(agent, scenario, trial, sim, seed=1)
+    assert result == "done"
+    user_msg = captured["payload"]["messages"][0]["content"]
+    assert "Refund the payment" in user_msg
+    assert "p1" in user_msg

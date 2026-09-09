@@ -9,7 +9,10 @@ async def run_openai_compatible(agent: dict, scenario: dict, trial, simulator, s
     if key: headers["Authorization"]=f"Bearer {key}"
     messages=[]
     if agent.get("system_prompt"): messages.append({"role":"system","content":agent["system_prompt"]})
-    messages.append({"role":"user","content":scenario.get("instruction","")})
+    instruction=scenario.get("instruction","")
+    variables=scenario.get("variables")
+    if variables: instruction=f"{instruction}\n\nContext: {json.dumps(variables, default=str)}"
+    messages.append({"role":"user","content":instruction})
     tools=[]
     tool_map={}
     for t in agent.get("tools",[]):

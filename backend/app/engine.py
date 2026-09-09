@@ -213,11 +213,21 @@ class SimulationEngine:
                 prompt={"role":"user","content":json.dumps({"task":"Previous JSON violated the schema. Regenerate only valid JSON.","previous":last,"output_schema":schema},default=str)}
         return last or {"error":"simulation_generation_failed"}
 
+    def _resolve_path_template(self, template, args):
+        try:
+            return template.format(**args)
+        except Exception:
+            return template
+
     def _simulate_tool(self, trial, tool, args):
         state = trial.state
         sim = tool.get("simulation", {})
         op = sim.get("op", "lookup")
+        path_template = sim.get("path")
         if op == "lookup":
+            if path_template:
+                value = get_path(state, self._resolve_path_template(path_template, args))
+                return copy.deepcopy(value) if value is not None else {"error":"not_found"}
             collection = sim.get("collection") or tool.get("name", "").replace("get_", "") + "s"
             key = str(args.get(sim.get("key_arg", "id"), ""))
             return copy.deepcopy(state.get(collection, {}).get(key, {"error":"not_found"}))
@@ -231,6 +241,11 @@ class SimulationEngine:
                     values = [v for v in values if isinstance(v, dict) and v.get(field) == arg]
             return {"items": copy.deepcopy(values)}
         if op == "create":
+            if path_template:
+                path = self._resolve_path_template(path_template, args)
+                value = copy.deepcopy(args)
+                trial.ledger.commit("add", path, value, source=f"tool:{tool.get('name')}")
+                return copy.deepcopy(value)
             collection = sim.get("collection")
             prefix = sim.get("id_prefix", "item")
             new_id = f"{prefix}_{len(state.get(collection, {}))+1:04d}"
@@ -238,6 +253,12 @@ class SimulationEngine:
             trial.ledger.commit("set", f"{collection}.{new_id}", value, source=f"tool:{tool.get('name')}")
             return copy.deepcopy(value)
         if op == "update":
+            if path_template:
+                path = self._resolve_path_template(path_template, args)
+                value_from = sim.get("value_from")
+                value = args.get(value_from) if value_from else args
+                trial.ledger.commit("set", path, value, source=f"tool:{tool.get('name')}")
+                return {"ok": True, "path": path, "value": value}
             collection = sim.get("collection")
             key_arg = sim.get("key_arg", "id")
             key = str(args.get(key_arg, ""))
