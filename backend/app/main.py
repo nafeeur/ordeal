@@ -152,7 +152,12 @@ async def execute_run(run_id:int,seed:int,repetitions:int=1,concurrency:int=16,m
     for sc,wo in items:
         reps=max(repetitions,int(sc.get("repetitions",1)))
         for rep in range(reps): tasks.append(one(copy.deepcopy(sc),copy.deepcopy(wo),seed+k)); k+=1
-    trials=await asyncio.gather(*tasks) if tasks else []
+    try:
+        trials=await asyncio.gather(*tasks) if tasks else []
+    except Exception as e:
+        with SessionLocal() as db:
+            r=db.get(Run,run_id); r.status="failed"; r.payload=dumps({"error":str(e)}); db.commit()
+        raise
     payload=_run_payload(trials,seed,{"distributed":False,**(meta or {})})
     with SessionLocal() as db:
         r=db.get(Run,run_id); r.status="completed"; r.payload=dumps(payload); db.commit()

@@ -1,4 +1,17 @@
-import json, os, httpx
+import asyncio, json, os, httpx
+
+RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+
+async def _post_with_retry(client, url, headers, payload, max_attempts=10, max_delay=60.0):
+    for attempt in range(max_attempts):
+        r = await client.post(url, headers=headers, json=payload)
+        if r.status_code not in RETRYABLE_STATUS or attempt == max_attempts - 1:
+            r.raise_for_status()
+            return r
+        retry_after = r.headers.get("retry-after")
+        delay = float(retry_after) if retry_after else min(2 ** attempt, max_delay)
+        await asyncio.sleep(delay)
+    return r
 
 async def run_openai_compatible(agent: dict, scenario: dict, trial, simulator, seed: int):
     endpoint=(agent.get("endpoint") or "").rstrip('/')
@@ -22,7 +35,7 @@ async def run_openai_compatible(agent: dict, scenario: dict, trial, simulator, s
     async with httpx.AsyncClient(timeout=float(scenario.get("timeout_seconds",120))) as client:
         for step in range(max_steps):
             payload={"model":agent.get("model"),"messages":messages,"tools":tools,"tool_choice":"auto","temperature":0,"seed":seed}
-            r=await client.post(url,headers=headers,json=payload); r.raise_for_status(); body=r.json()
+            r=await _post_with_retry(client,url,headers,payload); body=r.json()
             msg=body["choices"][0]["message"]
             calls=msg.get("tool_calls") or []
             if not calls: return msg.get("content") or ""

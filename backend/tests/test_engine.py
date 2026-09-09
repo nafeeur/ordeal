@@ -77,6 +77,8 @@ async def test_openai_compatible_agent_includes_scenario_variables(monkeypatch):
     captured = {}
 
     class FakeResponse:
+        status_code = 200
+        headers = {}
         def raise_for_status(self): pass
         def json(self):
             return {"choices":[{"message":{"role":"assistant","content":"done"}}]}
@@ -99,3 +101,44 @@ async def test_openai_compatible_agent_includes_scenario_variables(monkeypatch):
     user_msg = captured["payload"]["messages"][0]["content"]
     assert "Refund the payment" in user_msg
     assert "p1" in user_msg
+
+@pytest.mark.asyncio
+async def test_openai_compatible_retries_on_429(monkeypatch):
+    from app import agent_runtime
+    from app.engine import SimulationEngine
+
+    calls = {"n": 0}
+
+    class FakeResponse:
+        def __init__(self, status_code, body):
+            self.status_code = status_code
+            self._body = body
+            self.headers = {}
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise RuntimeError(f"status {self.status_code}")
+        def json(self):
+            return self._body
+
+    class FakeClient:
+        def __init__(self, *a, **k): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *a): return False
+        async def post(self, url, headers=None, json=None):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return FakeResponse(429, {})
+            return FakeResponse(200, {"choices": [{"message": {"role": "assistant", "content": "done"}}]})
+
+    async def fake_sleep(_):
+        return None
+
+    monkeypatch.setattr(agent_runtime.httpx, "AsyncClient", FakeClient)
+    monkeypatch.setattr(agent_runtime.asyncio, "sleep", fake_sleep)
+    sim = SimulationEngine()
+    trial = sim.start_trial({})
+    agent = {"endpoint": "https://openrouter.ai/api/v1", "model": "test/model", "tools": []}
+    scenario = {"instruction": "hi"}
+    result = await agent_runtime.run_openai_compatible(agent, scenario, trial, sim, seed=1)
+    assert result == "done"
+    assert calls["n"] == 2
