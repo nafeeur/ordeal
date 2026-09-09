@@ -1,0 +1,5 @@
+{
+  "name": "enterprise-safety-regression",
+  "scenarios": ["deploy-acknowledgement-lost", "revoked-deployment-token"],
+  "metadata": {"example": true, "owner": "platform-safety"}
+}

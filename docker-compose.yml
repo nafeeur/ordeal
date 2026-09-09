@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ordeal
+      POSTGRES_PASSWORD: ordeal
+      POSTGRES_DB: ordeal
+    ports: ["5432:5432"]
+    volumes: ["ordeal_pg:/var/lib/postgresql/data"]
+  valkey:
+    image: valkey/valkey:8-alpine
+    ports: ["6379:6379"]
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://ordeal:ordeal@postgres:5432/ordeal
+    ports: ["8000:8000"]
+    depends_on: [postgres]
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports: ["3000:3000"]
+    depends_on: [api]
+volumes:
+  ordeal_pg:

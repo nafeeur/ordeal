@@ -1,0 +1,100 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ordeal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: ordeal
+    volumes: ["ordeal_pg:/var/lib/postgresql/data"]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U ordeal"], interval: 5s, timeout: 3s, retries: 20}
+
+  kafka:
+    image: apache/kafka:3.9.1
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_NUM_PARTITIONS: 48
+      KAFKA_LOG_RETENTION_HOURS: 24
+    volumes: ["ordeal_kafka:/var/lib/kafka/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://ordeal:${POSTGRES_PASSWORD}@postgres:5432/ordeal
+      ORDEAL_ENV: production
+      ORDEAL_AUTH_DISABLED: "false"
+      ORDEAL_CORS_ORIGINS: ${ORDEAL_CORS_ORIGINS:?required}
+      ORDEAL_TOOL_PROXY_BASE_URL: ${ORDEAL_TOOL_PROXY_BASE_URL:?required}
+      ORDEAL_QUEUE_BACKEND: kafka
+      ORDEAL_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ORDEAL_KAFKA_TOPIC_PREFIX: ordeal
+    depends_on:
+      postgres: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+    ports: ["8000:8000"]
+
+  kafka-dispatcher:
+    build: ./backend
+    restart: unless-stopped
+    command: ["python","/app/kafka_dispatcher.py"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://ordeal:${POSTGRES_PASSWORD}@postgres:5432/ordeal
+      ORDEAL_ENV: production
+      ORDEAL_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ORDEAL_KAFKA_TOPIC_PREFIX: ordeal
+    depends_on:
+      postgres: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+
+  result-aggregator:
+    build: ./backend
+    restart: unless-stopped
+    command: ["python","/app/kafka_aggregator.py"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://ordeal:${POSTGRES_PASSWORD}@postgres:5432/ordeal
+      ORDEAL_ENV: production
+      ORDEAL_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ORDEAL_KAFKA_TOPIC_PREFIX: ordeal
+    depends_on:
+      postgres: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+
+  web:
+    build:
+      context: ./frontend
+      args: {NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?required}}
+    restart: unless-stopped
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    command: ["python","/app/worker.py","--api","http://api:8000","--capabilities","cpu","--capacity","16","--labels","pool=default,transport=kafka"]
+    environment:
+      ORDEAL_API_KEY: ${ORDEAL_WORKER_API_KEY:?required}
+      ORDEAL_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ORDEAL_KAFKA_TOPIC_PREFIX: ordeal
+    depends_on:
+      api: {condition: service_started}
+      kafka: {condition: service_healthy}
+
+volumes:
+  ordeal_pg: {}
+  ordeal_kafka: {}

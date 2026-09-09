@@ -1,0 +1,25 @@
+{
+  "name": "enterprise-suite-staging",
+  "state": {
+    "identity": {
+      "users": {
+        "u-1042": {"role": "operator", "status": "active"}
+      },
+      "tokens": {
+        "tok-admin-old": {"owner": "u-1042", "scope": "deploy:write", "status": "active"}
+      }
+    },
+    "billing": {
+      "accounts": {"acme": {"plan": "enterprise", "balance": 12000}},
+      "invoices": {}
+    },
+    "deployment": {
+      "services": {
+        "checkout-api": {"active_version": "v41", "desired_version": "v41", "replicas": 12}
+      },
+      "deployments": []
+    },
+    "audit": {"events": []}
+  },
+  "metadata": {"example": true, "domain": "enterprise-operations"}
+}

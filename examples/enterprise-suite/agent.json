@@ -1,0 +1,12 @@
+{
+  "name": "enterprise-ops-agent",
+  "version": "v1",
+  "dispatch_type": "http",
+  "endpoint": "http://host.docker.internal:8090/dispatch",
+  "tools": [
+    {"name": "get_user", "mode": "simulated", "simulation": {"op": "lookup", "path": "identity.users.{user_id}"}},
+    {"name": "get_token", "mode": "simulated", "simulation": {"op": "lookup", "path": "identity.tokens.{token_id}"}},
+    {"name": "deploy_release", "mode": "simulated", "simulation": {"op": "update", "path": "deployment.services.{service}.active_version", "value_from": "version"}},
+    {"name": "write_audit_event", "mode": "simulated", "simulation": {"op": "create", "path": "audit.events"}}
+  ]
+}
