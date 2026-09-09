@@ -392,7 +392,3 @@ Useful contribution areas include adapters, deterministic constraints, scenario 
 ## License
 
 MIT. See [`LICENSE`](LICENSE).
-
-## Project status
-
-Ordeal is an independent clean-room open-source project built from public agent-testing concepts and original implementation work. It does not contain Dystopic proprietary source code, private APIs, branding, or assets.
