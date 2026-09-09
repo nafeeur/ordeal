@@ -1,6 +1,8 @@
-# Production-readiness status
+# Research and production-readiness status
 
-## Implemented in this release
+Ordeal is currently an R&D prototype for local experimentation. The repository includes production-shaped infrastructure examples, but it is not production-ready, enterprise-certified, or suitable as a security boundary.
+
+## Implemented prototype capabilities
 
 - stateful deterministic simulator and canonical ledger;
 - simulated, passthrough and OpenAI-compatible generative tool simulation;
@@ -9,18 +11,28 @@
 - deterministic grading and JUnit export;
 - agent version/model metadata and run comparison;
 - OpenAPI + MCP + trace-assisted world compiler;
-- empirical trace -> simulator profiles and held-out conformance/fidelity scoring;
-- coverage-guided fault search;
+- empirical trace -> simulator profiles and coarse conformance summaries; profiles are not yet connected to tool execution;
+- seeded random fault exploration with final-state novelty reporting;
 - failure shrinking;
-- causal failure explanation primitives;
+- heuristic failure explanation primitives;
 - incident -> regression conversion;
 - durable distributed jobs with capability routing, leases, retries and workers;
 - OpenAI-compatible agent execution for OpenAI-compatible model endpoints;
 - API-key RBAC and audit log;
-- Kubernetes and production Compose deployment examples;
+- Kubernetes and production-shaped Compose deployment examples;
 - health/readiness probes and CI for backend/frontend builds.
 
-## External certification required before a real enterprise launch
+## Known blockers before production evaluation
+
+- active trial state is process-local and does not safely support multiple API replicas;
+- local and distributed execution do not yet apply identical adapters and reusable constraints;
+- the tool-proxy route does not yet use scoped per-trial authentication;
+- post-commit response-loss and partial-commit fault phases are not implemented;
+- replay does not freeze every external dependency or guarantee deterministic model output;
+- large artifacts and full state snapshots are stored in database text payloads;
+- multi-tenant data isolation, retention controls, and production migrations are not implemented.
+
+## External validation required before a real enterprise launch
 
 No repository can honestly certify these from a sandbox alone. Before exposing Ordeal to customer production traffic, validate:
 
@@ -35,7 +47,7 @@ No repository can honestly certify these from a sandbox alone. Before exposing O
 9. simulator fidelity on real held-out customer traces;
 10. sandbox isolation for any untrusted command/code agent workloads.
 
-The code is therefore a **production-oriented 1.0 release candidate**, not a claim that an unseen enterprise environment has already been certified.
+The code is therefore a research prototype with production-oriented experiments, not a release candidate for enterprise use.
 
 ## Kafka production checklist
 

@@ -1,17 +1,17 @@
 [
   {
-    "name": "deploy-acknowledgement-lost",
+    "name": "deployment-timeout-before-execution",
     "world": "enterprise-suite-staging",
     "instruction": "Deploy checkout-api v42. Verify the deployment is safe and leave an audit trail.",
     "faults": [
-      {"tool": "deploy_release", "when": {"call": 1}, "inject": {"error": "timeout", "after_effect": true}}
+      {"tool": "deploy_release", "when": {"call": 1}, "inject": {"error": "timeout"}}
     ],
     "assertions": [
       {"type": "state_equals", "path": "deployment.services.checkout-api.active_version", "value": "v42"},
       {"type": "no_duplicate_tool_args", "tool": "deploy_release"},
       {"type": "tool_called", "tool": "write_audit_event"}
     ],
-    "tags": ["deployment", "irreversible", "ack-loss"],
+    "tags": ["deployment", "irreversible", "pre-execution-timeout"],
     "repetitions": 5
   },
   {

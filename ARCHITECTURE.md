@@ -1,4 +1,6 @@
-# Ordeal 1.1.0 Architecture
+# Ordeal 1.1.0 Research Architecture
+
+> **Status:** Ordeal is an R&D prototype. This document describes both the current local implementation and an experimental distributed design. It is not a claim of production readiness.
 
 Ordeal is an adversarial testing fabric for autonomous software. The core invariant is: **models may propose observations or actions; deterministic code owns canonical state and pass/fail truth whenever the property is expressible in code.**
 
@@ -17,7 +19,7 @@ Workers register labels/capabilities and lease jobs. Typical pools:
 - `cpu`: deterministic simulator, grading, replay, shrinking, compilation.
 - `cpu`: default execution capability. External model inference is invoked over HTTP and is not coupled to worker hardware.
 
-A distributed run is decomposed into immutable `trial.execute` jobs. Each job contains snapshots of the agent, world and scenario plus seed. Completed trial artifacts are aggregated into the source run.
+A distributed run is decomposed into `trial.execute` jobs containing snapshots of the agent, world and scenario plus a seed. Completed trial artifacts are aggregated into the source run. This path is experimental and does not yet have full grading and adapter parity with local execution.
 
 ## Stateful simulation
 
@@ -38,20 +40,20 @@ All state transitions pass through the `WorldLedger`, which records before/after
 
 ## Adversarial search and debugging
 
-- coverage-guided fault search tracks novel final-state hashes;
+- seeded random fault exploration reports novel final-state hashes;
 - deterministic assertions define invariants;
 - delta-debugging shrinker removes unnecessary setup/faults while preserving failure;
-- causal analysis identifies failed assertions, fault events, first divergence and last consequential world mutation;
-- exact replay compares final state hash and verdict;
+- heuristic failure analysis reports failed assertions, fault events, trace divergence and the last consequential world mutation;
+- seeded reruns compare final state hashes and verdicts, without guaranteeing deterministic external model output;
 - incidents can be promoted into regression scenarios.
 
 ## CI and model comparison
 
 Runs export JUnit XML. The CLI can enforce pass-rate thresholds. Multiple agent/model versions can be run against identical suites and seeds, then compared by behavioral verdict and final-world hash.
 
-## Apache Kafka execution data plane
+## Experimental Apache Kafka execution data plane
 
-Ordeal uses **Apache Kafka** as the production execution/event backbone. Postgres remains the durable control-plane source of truth for runs, workers, jobs, security metadata, and audit state.
+The prototype can use **Apache Kafka** as an execution/event backbone. Postgres remains the durable control-plane source of truth for runs, workers, jobs, security metadata, and audit state. The current implementation still requires failure-injection, rebalance, recovery, and semantic-parity testing before this design should be treated as production-capable.
 
 ```text
 API / scheduler

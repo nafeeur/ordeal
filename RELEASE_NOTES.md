@@ -1,21 +1,23 @@
+> **Project status:** Ordeal is an R&D prototype. Production-shaped deployment files and advanced lab features are experimental and are not a production-readiness claim.
+
 ## 1.2.0 - Hardware-agnostic execution
 
 - Removed accelerator-specific worker discovery, labels, deployment scripts, and scheduling assumptions.
 - All Ordeal workers are generic Python workers.
 - Optional model inference remains supported through OpenAI-compatible HTTP endpoints, whether managed or self-hosted.
-- Kafka, deterministic testing, replay, learned simulation, causal analysis, and enterprise controls are unchanged.
+- Kafka execution, seeded reruns, trace-derived simulator profiles, heuristic failure analysis, and enterprise controls remain experimental.
 
-# Ordeal 1.0 release candidate
+# Ordeal 1.0 research milestone
 
-This release promotes Ordeal from a local v0 harness to a production-oriented distributed testing fabric.
+This release expands Ordeal from a local v0 harness into a research prototype with an experimental distributed execution path.
 
-Highlights: durable CPU workers; OpenAI-compatible agent execution; deterministic + LLM-assisted simulation with schema retry; trace-learned simulator profiles and fidelity scoring; OpenAPI/MCP world compilation; coverage-guided fuzzing; automatic shrinking; causal analysis; incident promotion; replay; JUnit; API-key RBAC/audit; Kubernetes/Compose deployment; new Mission Control UI.
+Highlights: experimental CPU workers; OpenAI-compatible agent execution; deterministic + LLM-assisted simulation with schema retry; trace-derived simulator profiles and coarse conformance summaries; OpenAPI/MCP world scaffolding; seeded random fault exploration; setup/fault shrinking; heuristic failure analysis; incident promotion; seeded reruns; JUnit; API-key RBAC foundation; Kubernetes/Compose examples; new Mission Control UI.
 
 Validation performed in the build environment: Python compilation, 7 backend tests, and an end-to-end distributed worker smoke campaign. The Next.js dependency install could not complete because package download access timed out, so the production frontend build must still be run in normal CI (the included GitHub Actions workflow does this).
 
-## 1.0.1 — Kafka execution fabric
+## 1.0.1 — Experimental Kafka execution fabric
 
-- Apache Kafka is now the production distributed execution/event data plane.
+- Apache Kafka is available as an experimental distributed execution/event data plane.
 - Added transactional Postgres -> Kafka outbox dispatcher.
 - Added capability-specific Kafka job topics and Python consumer-group workers.
 - Added Kafka result topic and idempotent Python result aggregator.
