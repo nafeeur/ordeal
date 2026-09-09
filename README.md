@@ -4,6 +4,10 @@
 </p>
 
 <p align="center">
+<strong>proof of concept, idea inspired by https://dystopic.ai/</strong>
+</p>
+
+<p align="center">
   <a href="https://github.com/nafeeur/ordeal/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/nafeeur/ordeal/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Python" src="https://img.shields.io/badge/Python-3.11%2B-11110f">
   <img alt="Kafka" src="https://img.shields.io/badge/Apache%20Kafka-distributed%20execution-11110f">
