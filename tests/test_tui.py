@@ -29,6 +29,7 @@ async def test_cockpit_navigation_and_live_data(monkeypatch):
         assert "VERIFIED" in str(app.query_one("#gate-verdict").render())
         await pilot.press("2"); await pilot.pause(); assert app.active_view=="runs"
         await pilot.press("3"); await pilot.pause(); assert app.active_view=="campaign"
+        await pilot.press("5"); await pilot.pause(); assert app.active_view=="runtime"
         await pilot.press(":"); await pilot.pause(); assert isinstance(app.screen,CommandPalette)
         await pilot.press("escape")
 

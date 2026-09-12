@@ -152,3 +152,12 @@ class MatrixRequest(BaseModel):
     repetitions: int = 1
     distributed: bool = True
     capability: str = "cpu"
+
+
+class RuntimeVerificationRequest(BaseModel):
+    execution: str = "runtime-execution"
+    contract: dict[str, Any]
+    initial_state: dict[str, Any] = Field(default_factory=dict)
+    final_state: dict[str, Any] = Field(default_factory=dict)
+    events: list[dict[str, Any]] = Field(default_factory=list)
+    expected_chain_head: str | None = None

@@ -1,5 +1,15 @@
 > **Project status:** Ordeal is an R&D prototype. Production-shaped deployment files and advanced lab features are experimental and are not a production-readiness claim.
 
+## 1.3.0 — Model-native runtime verification
+
+- Reframed Ordeal around deterministic verification for software whose behavior is selected at runtime by models.
+- Added `POST /api/runtime/verify` for verifying observed trajectories without invoking a model.
+- Added canonical events for reads, writes, deletes, service calls, transformations, visualizations, and decisions.
+- Added deterministic policies for ordering, data boundaries, provenance, transformation mappings, idempotency, denied actions, and final state.
+- Added tamper-evident event hash chains, stable fingerprints, and self-contained replay bundles.
+- Added an honest `INCOMPLETE` verdict when evidence cannot establish a policy claim.
+- Added `ordeal verify-runtime <spec.json>` and passing/failing reference traces.
+
 ## 1.2.0 - Hardware-agnostic execution
 
 - Removed accelerator-specific worker discovery, labels, deployment scripts, and scheduling assumptions.

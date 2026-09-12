@@ -1,6 +1,7 @@
 """Ordeal's forensic, keyboard-first verification cockpit."""
 from __future__ import annotations
 
+import json
 import os
 import time
 from dataclasses import dataclass
@@ -87,6 +88,8 @@ Button.-primary {{ background:$primary; color:$bg; border:tall $primary; text-st
 Input,Select {{ background:$sunken; color:$text; border:tall $border; height:3; }}
 Input:focus,Select:focus {{ border:tall $focus; }}
 #campaign-shell {{ width:86; max-width:100%; height:auto; align:center top; margin-top:1; border-left:thick $primary; }}
+#runtime-shell {{ width:96; max-width:100%; height:1fr; align:center top; margin-top:1; border-left:thick $focus; }}
+#runtime-result {{ height:1fr; margin-top:1; padding:1; background:$sunken; border-top:solid $border; }}
 .step {{ height:4; margin-bottom:1; }} .step-number {{ width:5; color:$primary; text-style:bold; content-align:center middle; }} .step-field {{ width:1fr; }}
 #estimate {{ height:3; color:$muted; padding:1 0; }} #run-result {{ height:auto; min-height:2; margin-top:1; }}
 #palette {{ width:72; height:18; background:$panel; border:round $focus; padding:1; }}
@@ -153,6 +156,7 @@ class CommandPalette(ModalScreen[str | None]):
     COMMANDS = [
         ("overview", "Open overview", "1"), ("runs", "Open verification runs", "2"),
         ("campaign", "Create verification campaign", "3"), ("evidence", "Inspect counterevidence", "4"),
+        ("runtime", "Verify a model-native runtime trace", "5"),
         ("refresh", "Refresh verifier telemetry", "R"), ("replay", "Replay selected counterexample", "R"),
         ("shrink", "Shrink selected counterexample", "S"), ("capture", "Save deterministic UI capture", ""),
     ]
@@ -190,7 +194,7 @@ class HelpScreen(ModalScreen):
     def compose(self) -> ComposeResult:
         with Vertical(id="help"):
             yield Label("ORDEAL // COMMAND MAP", classes="eyebrow")
-            yield Static("1–4  switch view     ↑↓  navigate     enter  inspect\n"
+            yield Static("1–5  switch view     ↑↓  navigate     enter  inspect\n"
                          "r    refresh         R   replay       S      shrink\n"
                          ":    command palette ?   help         q      quit", classes="muted")
             yield Button("CLOSE", id="close-help")
@@ -208,6 +212,7 @@ class OrdealTUI(App):
         ("colon", "palette", "Command"), ("ctrl+k", "palette", "Command"),
         ("1", "tab('overview')", "Overview"), ("2", "tab('runs')", "Runs"),
         ("3", "tab('campaign')", "Campaign"), ("4", "tab('evidence')", "Evidence"),
+        ("5", "tab('runtime')", "Runtime"),
         ("shift+r", "replay", "Replay"), ("shift+s", "shrink", "Shrink"),
     ]
 
@@ -278,6 +283,15 @@ class OrdealTUI(App):
                         with Horizontal(id="evidence-actions"):
                             yield Button("REPLAY  R", id="replay-button")
                             yield Button("SHRINK  S", id="shrink-button")
+            with Container(id="runtime", classes="screen"):
+                with Vertical(id="runtime-shell", classes="panel"):
+                    yield Label("MODEL-NATIVE RUNTIME", classes="eyebrow")
+                    yield Static("Verify an observed trajectory against a deterministic contract. The model is never asked to grade itself.", classes="muted")
+                    with Horizontal(classes="step"):
+                        yield Label("01", classes="step-number")
+                        yield Input(value="examples/model-native-runtime/verified.json", placeholder="Execution bundle (.json)", id="runtime-path", classes="step-field")
+                    yield Button("VERIFY TRACE", id="runtime-button", variant="primary")
+                    yield VerticalScroll(Static("Load a captured execution to inspect policy, provenance, and integrity evidence.", id="runtime-result"))
         yield Vertical(id="toast-rack")
         yield Static(id="status-rail")
 
@@ -293,7 +307,7 @@ class OrdealTUI(App):
         self.screen.set_class(72 <= event.size.width < 91, "medium")
 
     def render_nav(self) -> None:
-        items = [("overview","OVERVIEW"),("runs","RUNS"),("campaign","NEW CAMPAIGN"),("evidence","EVIDENCE")]
+        items = [("overview","OVERVIEW"),("runs","RUNS"),("campaign","NEW CAMPAIGN"),("evidence","EVIDENCE"),("runtime","RUNTIME")]
         chunks = []
         for key, label in items:
             chunks.append(f"[{T.background} on {T.primary}] {label} [/]" if key == self.active_view else f"[{T.muted}] {label} [/]")
@@ -318,7 +332,7 @@ class OrdealTUI(App):
 
     def run_command(self, command: str | None) -> None:
         if not command: return
-        if command in {"overview","runs","campaign","evidence"}: self.action_tab(command)
+        if command in {"overview","runs","campaign","evidence","runtime"}: self.action_tab(command)
         elif command == "refresh": self.action_refresh()
         elif command == "replay": self.action_replay()
         elif command == "shrink": self.action_shrink()
@@ -450,6 +464,38 @@ class OrdealTUI(App):
         p=result.get("payload",{});passed=not p.get("fail_count");self.query_one("#beam",VerificationBeam).set_state(passed=passed);self.query_one("#run-button",Button).disabled=False;self.query_one("#run-result",Static).update(f"[bold {T.success if passed else T.danger}]{'VERIFIED' if passed else 'BLOCKED'}[/]  {p.get('pass_count',0)} passed / {p.get('fail_count',0)} failed / fingerprint {p.get('run_fingerprint','—')}");self.toast("VERDICT RECORDED", "success" if passed else "error");self.action_refresh()
     def fail_run(self,message:str)->None:
         self.query_one("#beam",VerificationBeam).set_state(passed=False);self.query_one("#run-button",Button).disabled=False;self.query_one("#run-result",Static).update(f"[{T.danger}]ERROR[/] {message}");self.toast(message,"error");self.render_status()
+
+    @on(Button.Pressed,"#runtime-button")
+    def runtime_button(self)->None:self.submit_runtime()
+
+    @work(exclusive=True,group="runtime",thread=True)
+    def submit_runtime(self)->None:
+        try:
+            path=self.call_from_thread(lambda:self.query_one("#runtime-path",Input).value)
+            with open(path,encoding="utf-8") as handle: body=json.load(handle)
+            self.call_from_thread(self.begin_runtime)
+            result=self.client.request("/api/runtime/verify","POST",body)
+            self.call_from_thread(self.finish_runtime,result)
+        except (OSError,json.JSONDecodeError,OrdealError) as exc:self.call_from_thread(self.fail_runtime,str(exc))
+
+    def begin_runtime(self)->None:
+        self.query_one("#runtime-button",Button).disabled=True
+        self.query_one("#runtime-result",Static).update(f"[{T.focus}]{GLYPH['running']} VERIFYING[/]  normalizing events and evaluating contract…")
+
+    def finish_runtime(self,result:dict[str,Any])->None:
+        self.query_one("#runtime-button",Button).disabled=False
+        verdict=result.get("verdict","INCOMPLETE"); colour=T.success if verdict=="PASS" else T.danger if verdict=="FAIL" else T.warning
+        summary=result.get("summary",{}); lines=[f"[bold {colour}]{verdict}[/]  {result.get('execution','—')}",f"CONTRACT     {result.get('contract','—')}",f"FINGERPRINT  {result.get('fingerprint','—')}",f"CHAIN HEAD   {result.get('evidence',{}).get('chain_head','—')}","",f"EVENTS {summary.get('events',0)}   POLICIES {summary.get('policies',0)}   PASSED {summary.get('passed',0)}   VIOLATED {summary.get('violated',0)}"]
+        failures=result.get("violations",[])
+        if failures:
+            lines.extend(["",f"[bold {T.danger}]COUNTEREVIDENCE[/]"])
+            for item in failures:lines.append(f"{GLYPH['fail']} {item.get('policy')}  {item.get('reason')}\n  evidence={item.get('evidence',[])}  actual={item.get('actual')}")
+        else:lines.extend(["",f"[{T.success}]{GLYPH['pass']} No counterevidence within the declared boundary.[/]"])
+        for item in result.get("unresolved",[]):lines.append(f"[{T.warning}]? {item.get('policy','contract')}  {item.get('reason')}[/]")
+        self.query_one("#runtime-result",Static).update("\n".join(lines));self.toast(f"RUNTIME VERDICT / {verdict}","success" if verdict=="PASS" else "error" if verdict=="FAIL" else "warning")
+
+    def fail_runtime(self,message:str)->None:
+        self.query_one("#runtime-button",Button).disabled=False;self.query_one("#runtime-result",Static).update(f"[{T.danger}]ERROR[/] {message}");self.toast(message,"error")
 
     @on(Button.Pressed,"#replay-button")
     def replay_button(self)->None:self.replay_selected()

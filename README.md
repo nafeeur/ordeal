@@ -1,6 +1,6 @@
 <p align="center">
   <strong>ORDEAL</strong><br/>
-  <em>Adversarial testing for autonomous software.</em>
+  <em>Runtime verification for model-native software.</em>
 </p>
 
 <p align="center">
@@ -14,11 +14,13 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-11110f">
 </p>
 
-Ordeal is an open-source **R&D prototype for autonomously verifying software-writing agents**. A coding agent may claim that its patch is finished; Ordeal independently exercises the resulting behavior, injects failures, records state transitions, and issues a deterministic verdict backed by replayable evidence.
+Ordeal is an open-source **R&D prototype for verifying software whose behavior is decided at runtime by models**. It observes reads, transformations, writes, visualizations, and service calls; reconstructs their provenance; and evaluates the trajectory against deterministic contracts.
+
+The long-term target is model-native software in which a model dynamically moves and transforms data across databases and services instead of following a fixed backend code path. The model can choose *how* to accomplish an intent. A deterministic substrate still decides what is allowed, records what happened, and produces `PASS`, `FAIL`, or `INCOMPLETE` with evidence.
 
 The current release is intended for local experimentation and research. It is not production-ready and should not be used as a security boundary or to test against live, irreversible systems.
 
-> **The model may propose. The ledger establishes truth.**
+> **Models choose behavior. Ordeal verifies consequences.**
 
 Ordeal is terminal-native. The full-screen TUI and automation-friendly CLI are the only product interfaces; the API remains the execution control plane.
 
@@ -34,13 +36,14 @@ The TUI is designed as a responsive operator console, not a terminal copy of a w
 | **Runs** | Campaign status, pass/fail totals, and reproducible run fingerprints |
 | **New campaign** | Run an agent against a trusted suite with an explicit seed |
 | **Evidence** | Inspect failed scenarios, constraint violations, state hashes, and counterevidence |
+| **Runtime** | Load an observed model-native execution and inspect its policy, provenance, and integrity verdict |
 
 The interface also includes a fuzzy command palette (`:` or `Ctrl+K`), guided campaign setup, contextual replay and shrinking, transient notifications, behavioral timelines, and compact layouts for terminals below 72 columns.
 
 Keyboard controls:
 
 ```text
-1–4  switch view     r  refresh     enter  inspect selected run
+1–5  switch view     r  refresh     enter  inspect selected run
 ?    command map     q  quit
 ```
 
@@ -53,6 +56,11 @@ For constrained or automated environments, set `ORDEAL_ASCII=1` to replace Unico
 The same client works in CI without launching the TUI:
 
 ```bash
+# Verify a captured model-native execution and block on any unsafe verdict.
+python ordeal_cli.py verify-runtime \
+  examples/model-native-runtime/verified.json \
+  --fail-on-verdict
+
 # Run a campaign and return exit code 2 if the verdict blocks deployment.
 python ordeal_cli.py run \
   --agent enterprise-ops-agent \
@@ -76,41 +84,43 @@ Set `ORDEAL_API_URL` and `ORDEAL_API_KEY` for remote environments, or pass `--ap
 
 ## Why Ordeal?
 
-Traditional LLM evals often ask whether a final answer looks good. That is not enough for agents that can deploy software, move money, change permissions, modify customer records, or call irreversible APIs.
+Traditional software is largely reviewable as code. In model-native software, behavior emerges from the model, context, available capabilities, live state, and policy. There may be no single backend function that describes the path from intent to effect.
 
-Ordeal evaluates **what actually happened to the world**.
+Traditional LLM evals also tend to judge the final answer. That is insufficient when a model can read private data, move records, change permissions, or call irreversible APIs. A final state may look correct even though the model reached it through an illegal path.
+
+Ordeal evaluates **what actually happened, where the data came from, and whether the path was allowed**.
 
 ```text
-user request
+user intent
     ↓
-real agent
+model runtime
     ↓
-Ordeal tool boundary
+instrumented capability boundary
     ↓
-simulated / passthrough / native tools
+databases / services / files / visualizations
     ↓
-canonical state ledger
+canonical event ledger + provenance graph
     ↓
-constraints + trajectory evaluation
+deterministic runtime contract
     ↓
-PASS / FAIL / IN VARIANCE
+PASS / FAIL / INCOMPLETE
     ↓
-rerun → inspect → shrink → regression test
+evidence bundle → replay → regression gate
 ```
 
-## What it does
+## Runtime verifier
 
-- **Stateful worlds** — later tool calls see the effects of earlier calls.
-- **Deterministic constraints** — grade objective behavior in code before using model judgment.
-- **Simulated and passthrough tools** — model a boundary locally or call a controlled HTTP endpoint.
-- **Fault injection** — deterministic pre-execution faults and post-commit acknowledgement loss.
-- **Repeated-run stability** — distinguish stable failures from stochastic variance.
-- **Baseline comparison** — compare scenario pass rates, state hashes, and constraint violations between runs.
-- **Seeded reruns** — rerun from stored agent, world, and scenario snapshots. External model calls may still vary.
-- **Failure shrinking** — remove unnecessary setup and fault entries while preserving a failure.
-- **Experimental analysis tools** — trace summaries, world scaffolding, random fault exploration, and heuristic failure explanations.
-- **Experimental distributed execution** — a Kafka worker path for development and further validation.
-- **Hardware/model agnostic** — Ordeal calls model endpoints over HTTP; it does not require accelerator-specific infrastructure.
+- **Trajectory correctness** — require permission, consent, validation, or policy checks before sensitive actions.
+- **Data boundaries** — prevent classified data from crossing into unapproved services.
+- **Causal provenance** — require writes and visualizations to depend on specific trusted reads.
+- **Transformation contracts** — verify copied, concatenated, and constant fields against their declared source data.
+- **Idempotency** — detect duplicate irreversible actions, including retries after ambiguous success.
+- **State invariants** — check the externally observed final state with deterministic assertions.
+- **Tamper evidence** — hash-chain normalized events and emit a stable execution fingerprint.
+- **Honest uncertainty** — return `INCOMPLETE` when the contract is empty or uses unsupported policy semantics.
+- **Replay bundles** — return the exact normalized trace, states, contract, and expected chain head needed to verify again.
+
+The existing adversarial simulator remains useful as a pre-deployment laboratory. It can run model/agent candidates through stateful worlds, inject faults, compare repeated runs, shrink failures, and promote incidents into regression scenarios. The runtime verifier is the complementary production-facing primitive: it judges an observed trajectory without invoking or trusting a model.
 
 Advanced lab and distributed features are exploratory. Local and distributed execution do not yet have full semantic parity, and simulator profiles are not yet used to drive tool execution.
 
@@ -155,6 +165,31 @@ In another terminal, launch the TUI:
 ```bash
 make tui
 ```
+
+### Verify model-native behavior
+
+Start the API, then verify the included customer re-engagement trace:
+
+```bash
+python ordeal_cli.py verify-runtime examples/model-native-runtime/verified.json --fail-on-verdict
+```
+
+The example models a system that reads a Salesforce customer, checks a legal-hold service, transforms the record, writes it to a campaign database, and invokes messaging. Its contract proves that:
+
+1. the legal-hold check happened before contact for the same customer;
+2. PII only crossed approved service boundaries;
+3. the campaign write has a causal path to the Salesforce read;
+4. the record mapping is exact;
+5. the customer was contacted at most once; and
+6. the expected final state was externally observed.
+
+To see concrete counterevidence, run:
+
+```bash
+python ordeal_cli.py verify-runtime examples/model-native-runtime/violated.json --fail-on-verdict
+```
+
+The unsafe trace contacts a customer without a legal-hold check and repeats the action. Ordeal exits with code `2` and identifies both violated policies.
 
 ## Five-minute example: Enterprise Software Suite
 

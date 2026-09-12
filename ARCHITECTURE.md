@@ -1,8 +1,41 @@
-# Ordeal 1.1.0 Research Architecture
+# Ordeal 1.3.0 Research Architecture
 
 > **Status:** Ordeal is an R&D prototype. This document describes both the current local implementation and an experimental distributed design. It is not a claim of production readiness.
 
-Ordeal is an adversarial testing fabric for autonomous software. The core invariant is: **models may propose observations or actions; deterministic code owns canonical state and pass/fail truth whenever the property is expressible in code.**
+Ordeal is a runtime verification system for model-native software, with an adversarial simulator for pre-deployment testing. The core invariant is: **models may choose actions; deterministic code owns policy, evidence, and pass/fail truth whenever the property is expressible in code.**
+
+## Model-native runtime verification
+
+The runtime path accepts observations from a capability gateway, sidecar, service mesh, or application SDK. Each normalized event describes a read, write, delete, call, transformation, visualization, or decision and can declare causal dependencies on earlier events.
+
+```text
+intent + model + context
+          │
+          ▼
+instrumented capabilities
+          │
+          ├─ databases
+          ├─ APIs
+          ├─ files
+          └─ visualizations
+          │
+          ▼
+canonical event trace
+          │
+          ├─ authorization order
+          ├─ data boundaries
+          ├─ causal provenance
+          ├─ transformation mapping
+          ├─ idempotency
+          └─ final-state invariants
+          │
+          ▼
+PASS / FAIL / INCOMPLETE + replay bundle
+```
+
+Events are normalized and hash-chained. Policies are deliberately constrained data structures rather than arbitrary code or model prompts. A missing/unsupported policy produces `INCOMPLETE`; structural trace corruption or a critical/major violation produces `FAIL`. A `PASS` is always scoped to the supplied observations and declared contract—it is not a claim that unobserved behavior was safe.
+
+The initial implementation supports seven policy types: `deny`, `require_before`, `data_boundary`, `max_occurrences`, `require_dependency`, `transformation`, and `state_assertion`. `POST /api/runtime/verify` performs verification without invoking a model and returns a self-contained replay bundle.
 
 ## Control plane
 
