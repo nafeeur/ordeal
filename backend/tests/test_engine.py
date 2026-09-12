@@ -21,6 +21,17 @@ async def test_fault_is_repeatable_and_does_not_mutate():
     assert t.ledger.export()["entries"]==[]
 
 @pytest.mark.asyncio
+async def test_after_commit_fault_hides_success_but_preserves_mutation():
+    sim=SimulationEngine(); t=sim.start_trial({"deployments":{}})
+    tool={"name":"deploy","simulation":{"op":"create","collection":"deployments","id_prefix":"release"}}
+    faults=[{"tool":"deploy","when":{"call":1},"inject":{"phase":"after_commit","error":"connection_reset"}}]
+    result=await sim.tool_call(t,tool,{"version":"v42"},faults,random.Random(1))
+    assert result=={"error":"connection_reset","injected":True}
+    assert t.state["deployments"]["release_0001"]["version"]=="v42"
+    assert t.events[-1]["fault_phase"]=="after_commit"
+    assert t.events[-1]["committed_result"]["id"]=="release_0001"
+
+@pytest.mark.asyncio
 async def test_order_and_duplicate_assertions():
     sim=SimulationEngine(); t=sim.start_trial({"refunds":{}})
     a={"name":"get_payment","simulation":{"op":"template","response":{"status":"captured"}}}

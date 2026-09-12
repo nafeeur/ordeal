@@ -1,1 +1,0 @@
-import {RecordEditor} from '../../components/RecordEditor'; export default function Page(){return <RecordEditor kind="agents" title="Agents" description="Register agent versions and the tools they can call. Mock agents use a deterministic plan; HTTP adapters can be added behind the same contract."/>}

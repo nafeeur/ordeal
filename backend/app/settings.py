@@ -9,7 +9,7 @@ def _bool(name: str, default: bool = False) -> bool:
 class Settings:
     environment: str = os.getenv("ORDEAL_ENV", "development")
     auth_disabled: bool = _bool("ORDEAL_AUTH_DISABLED", True)
-    cors_origins: str = os.getenv("ORDEAL_CORS_ORIGINS", "http://localhost:3000")
+    cors_origins: str = os.getenv("ORDEAL_CORS_ORIGINS", "")
     public_base_url: str = os.getenv("ORDEAL_PUBLIC_BASE_URL", "http://localhost:8000")
     tool_proxy_base_url: str = os.getenv("ORDEAL_TOOL_PROXY_BASE_URL", "http://localhost:8000")
     max_parallel_trials: int = int(os.getenv("ORDEAL_MAX_PARALLEL_TRIALS", "16"))

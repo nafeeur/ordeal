@@ -9,3 +9,4 @@ pytest-asyncio==1.1.0
 psycopg[binary]==3.2.9
 aiokafka==0.12.0
 lz4==4.4.4
+textual==6.1.0

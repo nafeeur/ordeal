@@ -20,14 +20,14 @@ Ordeal is currently an R&D prototype for local experimentation. The repository i
 - OpenAI-compatible agent execution for OpenAI-compatible model endpoints;
 - API-key RBAC and audit log;
 - Kubernetes and production-shaped Compose deployment examples;
-- health/readiness probes and CI for backend/frontend builds.
+- health/readiness probes and CI for backend/terminal-client builds.
 
 ## Known blockers before production evaluation
 
 - active trial state is process-local and does not safely support multiple API replicas;
 - local and distributed execution do not yet apply identical adapters and reusable constraints;
 - the tool-proxy route does not yet use scoped per-trial authentication;
-- post-commit response-loss and partial-commit fault phases are not implemented;
+- post-commit response loss is implemented; partial-response and partial-commit fault phases are not;
 - replay does not freeze every external dependency or guarantee deterministic model output;
 - large artifacts and full state snapshots are stored in database text payloads;
 - multi-tenant data isolation, retention controls, and production migrations are not implemented.
