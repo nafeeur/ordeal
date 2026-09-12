@@ -14,23 +14,13 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-11110f">
 </p>
 
-Ordeal is an open-source **R&D prototype for crash-testing AI agents**. It runs an agent inside a controlled, stateful environment, injects failures, records what the agent does, and evaluates the resulting world state with deterministic checks.
+Ordeal is an open-source **R&D prototype for autonomously verifying software-writing agents**. A coding agent may claim that its patch is finished; Ordeal independently exercises the resulting behavior, injects failures, records state transitions, and issues a deterministic verdict backed by replayable evidence.
 
 The current release is intended for local experimentation and research. It is not production-ready and should not be used as a security boundary or to test against live, irreversible systems.
 
 > **The model may propose. The ledger establishes truth.**
 
-## See it
-
-### Campaign overview
-
-![Ordeal campaign overview](docs/images/overview.png)
-
-### Failure analysis
-
-![Ordeal failure analysis](docs/images/failure-analysis.png)
-
-*Screenshots use the included fictional Enterprise Software Suite demo data.*
+Ordeal is terminal-native. The full-screen TUI and automation-friendly CLI are the only product interfaces; the API remains the execution control plane.
 
 ## Why Ordeal?
 
@@ -61,7 +51,7 @@ rerun → inspect → shrink → regression test
 - **Stateful worlds** — later tool calls see the effects of earlier calls.
 - **Deterministic constraints** — grade objective behavior in code before using model judgment.
 - **Simulated and passthrough tools** — model a boundary locally or call a controlled HTTP endpoint.
-- **Fault injection** — deterministic pre-execution errors, delays, and custom responses.
+- **Fault injection** — deterministic pre-execution faults and post-commit acknowledgement loss.
 - **Repeated-run stability** — distinguish stable failures from stochastic variance.
 - **Baseline comparison** — compare scenario pass rates, state hashes, and constraint violations between runs.
 - **Seeded reruns** — rerun from stored agent, world, and scenario snapshots. External model calls may still vary.
@@ -84,35 +74,34 @@ cd ordeal
 docker compose up --build
 ```
 
-Then open:
+Then open the terminal interface:
 
-- UI: `http://localhost:3000`
-- API: `http://localhost:8000`
-- Health: `http://localhost:8000/health`
+```bash
+python ordeal_cli.py
+```
+
+The API remains available at `http://localhost:8000` and health checks at `/health`.
 
 Seed the built-in demo:
 
 ```bash
-curl -X POST http://localhost:8000/api/demo/seed
+python ordeal_cli.py seed-demo
 ```
 
-### Option B — local Python + Next.js
+### Option B — local Python
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements.txt
 
-cd backend
-uvicorn app.main:app --reload
+make api
 ```
 
-In another terminal:
+In another terminal, launch the TUI:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+make tui
 ```
 
 ## Five-minute example: Enterprise Software Suite
@@ -177,7 +166,7 @@ the simulated deployment is not committed
 the test inspects how the agent responds to a failed attempt
 ```
 
-Post-commit response loss - where an operation succeeds but its acknowledgement disappears - is an important planned fault mode, but it is not implemented in the current engine.
+Post-commit response loss is also supported. Set `inject.phase` to `after_commit` to commit the operation, hide its successful response, and return the injected error to the agent. This exercises idempotency under ambiguous success without making the outcome nondeterministic.
 
 ### 4. Add reusable constraints
 
@@ -294,7 +283,7 @@ Model-based simulation or semantic judging is optional. It is useful for fuzzy o
 ```text
                               ORDEAL
 
-                         Next.js interface
+                       terminal UI / CLI
                                │
                                ▼
                      FastAPI control plane
@@ -357,18 +346,19 @@ cd backend
 PYTHONPATH=. pytest -q
 ```
 
-CI also builds the Next.js frontend.
+CI compiles the terminal client alongside the engine test suite.
 
 ## Repository layout
 
 ```text
 backend/                    FastAPI control plane, simulator, workers, tests
-frontend/                   Next.js interface
+ordeal_tui.py               full-screen Textual interface
+ordeal_cli.py               CI-safe command interface
 examples/enterprise-suite/ end-to-end example
 .github/workflows/          CI
 .github/ISSUE_TEMPLATE/     contributor templates
 deploy/k8s/                 Kubernetes example
-docs/images/                UI screenshots
+docs/                       research notes and historical experiment images
 ARCHITECTURE.md             system architecture
 PRODUCTION_READINESS.md     deployment/readiness notes
 SECURITY.md                 security policy and deployment guidance
@@ -379,7 +369,7 @@ CONTRIBUTING.md             contributor guide
 
 Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a PR.
 
-Useful contribution areas include adapters, deterministic constraints, scenario generators, trace importers, replay tooling, simulator-conformance metrics, and UI accessibility.
+Useful contribution areas include repository sandboxes, deterministic constraints, scenario generators, trace importers, replay tooling, counterexample shrinking, and terminal accessibility.
 
 ## License
 

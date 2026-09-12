@@ -16,12 +16,5 @@ services:
       DATABASE_URL: postgresql+psycopg://ordeal:ordeal@postgres:5432/ordeal
     ports: ["8000:8000"]
     depends_on: [postgres]
-  web:
-    build:
-      context: ./frontend
-      args:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
-    ports: ["3000:3000"]
-    depends_on: [api]
 volumes:
   ordeal_pg:

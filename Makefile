@@ -1,8 +1,8 @@
-.PHONY: api web test demo
+.PHONY: api tui test demo
 api:
 	cd backend && uvicorn app.main:app --reload
-web:
-	cd frontend && npm run dev
+tui:
+	python3 ordeal_cli.py tui
 test:
 	cd backend && PYTHONPATH=. pytest -q
 demo:

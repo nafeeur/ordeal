@@ -1,1 +1,0 @@
-import {RecordEditor} from '../../components/RecordEditor'; export default function Page(){return <RecordEditor kind="worlds" title="Worlds" description="Define the canonical initial state of the systems your agent operates on."/>}

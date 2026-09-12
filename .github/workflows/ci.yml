@@ -9,11 +9,12 @@ jobs:
         with: {python-version: '3.13'}
       - run: pip install -r backend/requirements.txt
       - run: cd backend && PYTHONPATH=. pytest -q
-  frontend:
+  terminal:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: {node-version: '22'}
-      - run: cd frontend && npm install
-      - run: cd frontend && npm run build
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - run: pip install -r backend/requirements.txt
+      - run: python -m py_compile ordeal_cli.py ordeal_tui.py
+      - run: python ordeal_cli.py --help

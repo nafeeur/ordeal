@@ -1,1 +1,0 @@
-import {RecordEditor} from '../../components/RecordEditor'; export default function Page(){return <RecordEditor kind="suites" title="Suites" description="Group scenarios into repeatable regression test suites."/>}

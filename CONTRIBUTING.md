@@ -11,12 +11,12 @@ pip install -r backend/requirements.txt
 cd backend && PYTHONPATH=. pytest -q
 ```
 
-For frontend work:
+For terminal interface work:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+make api
+# in another terminal
+make tui
 ```
 
 ## Pull requests
@@ -29,4 +29,4 @@ npm run dev
 
 ## Good first contributions
 
-Adapters, deterministic constraints, scenario generators, trace importers, UI accessibility, documentation, and reproducible examples are all welcome.
+Repository sandboxes, adapters, deterministic constraints, scenario generators, trace importers, TUI accessibility, documentation, and reproducible examples are all welcome.

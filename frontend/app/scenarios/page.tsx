@@ -1,1 +1,0 @@
-import {RecordEditor} from '../../components/RecordEditor'; export default function Page(){return <RecordEditor kind="scenarios" title="Scenarios" description="Combine a world, user instruction, controlled perturbations, variables, and assertions."/>}
