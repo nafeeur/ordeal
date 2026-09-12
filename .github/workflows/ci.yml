@@ -18,3 +18,4 @@ jobs:
       - run: pip install -r backend/requirements.txt
       - run: python -m py_compile ordeal_cli.py ordeal_tui.py
       - run: python ordeal_cli.py --help
+      - run: python -m pytest -q tests/test_tui.py

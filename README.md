@@ -26,7 +26,7 @@ Ordeal is terminal-native. The full-screen TUI and automation-friendly CLI are t
 
 ![Ordeal terminal interface showing verifier status, pass rate, regressions, workers, and the trust model](docs/images/ordeal-tui.svg)
 
-The TUI is designed as an operator console, not a terminal copy of a web dashboard. It keeps the current verification boundary visible and makes the evidence behind a verdict reachable without leaving the keyboard.
+The TUI is designed as a responsive operator console, not a terminal copy of a web dashboard. It keeps the current verification boundary visible and makes the evidence behind a verdict reachable without leaving the keyboard.
 
 | View | Purpose |
 | --- | --- |
@@ -35,6 +35,8 @@ The TUI is designed as an operator console, not a terminal copy of a web dashboa
 | **New campaign** | Run an agent against a trusted suite with an explicit seed |
 | **Evidence** | Inspect failed scenarios, constraint violations, state hashes, and counterevidence |
 
+The interface also includes a fuzzy command palette (`:` or `Ctrl+K`), guided campaign setup, contextual replay and shrinking, transient notifications, behavioral timelines, and compact layouts for terminals below 72 columns.
+
 Keyboard controls:
 
 ```text
@@ -42,7 +44,9 @@ Keyboard controls:
 ?    command map     q  quit
 ```
 
-The light-blue and teal interface is intentionally restrained: cyan identifies evidence, teal marks trusted actions and passing states, muted blue-gray carries metadata, and red is reserved for counterevidence.
+The light-blue and teal interface is intentionally restrained: teal carries Ordeal's identity, ice blue identifies operator focus, mint is reserved for verified evidence, muted blue-gray carries metadata, and coral is reserved for counterevidence. During execution, Ordeal's verification beam sweeps across the current gate and then locks into the final semantic state.
+
+For constrained or automated environments, set `ORDEAL_ASCII=1` to replace Unicode glyphs and `ORDEAL_FROZEN_UI=1` or `NO_MOTION=1` to disable motion and produce deterministic captures.
 
 ### Headless verification
 
