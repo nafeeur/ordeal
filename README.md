@@ -22,6 +22,54 @@ The current release is intended for local experimentation and research. It is no
 
 Ordeal is terminal-native. The full-screen TUI and automation-friendly CLI are the only product interfaces; the API remains the execution control plane.
 
+## Terminal interface
+
+![Ordeal terminal interface showing verifier status, pass rate, regressions, workers, and the trust model](docs/images/ordeal-tui.svg)
+
+The TUI is designed as an operator console, not a terminal copy of a web dashboard. It keeps the current verification boundary visible and makes the evidence behind a verdict reachable without leaving the keyboard.
+
+| View | Purpose |
+| --- | --- |
+| **Overview** | Verifier health, aggregate pass rate, recent regressions, workers, queue mode, and coverage inventory |
+| **Runs** | Campaign status, pass/fail totals, and reproducible run fingerprints |
+| **New campaign** | Run an agent against a trusted suite with an explicit seed |
+| **Evidence** | Inspect failed scenarios, constraint violations, state hashes, and counterevidence |
+
+Keyboard controls:
+
+```text
+1–4  switch view     r  refresh     enter  inspect selected run
+?    command map     q  quit
+```
+
+The light-blue and teal interface is intentionally restrained: cyan identifies evidence, teal marks trusted actions and passing states, muted blue-gray carries metadata, and red is reserved for counterevidence.
+
+### Headless verification
+
+The same client works in CI without launching the TUI:
+
+```bash
+# Run a campaign and return exit code 2 if the verdict blocks deployment.
+python ordeal_cli.py run \
+  --agent enterprise-ops-agent \
+  --suite enterprise-safety-regression \
+  --seed 41 \
+  --repetitions 5 \
+  --commit "$GIT_SHA" \
+  --fail-on-verdict
+
+# Reproduce a stored counterexample. A mismatch exits 2.
+python ordeal_cli.py replay 42 deployment-timeout-before-execution
+
+# Block only on regressions introduced by the candidate.
+python ordeal_cli.py compare 41 42 --fail-on-regression
+
+# Re-evaluate a completed run as a deployment gate.
+python ordeal_cli.py gate 42
+```
+
+Set `ORDEAL_API_URL` and `ORDEAL_API_KEY` for remote environments, or pass `--api` and `--api-key` explicitly.
+
 ## Why Ordeal?
 
 Traditional LLM evals often ask whether a final answer looks good. That is not enough for agents that can deploy software, move money, change permissions, modify customer records, or call irreversible APIs.
