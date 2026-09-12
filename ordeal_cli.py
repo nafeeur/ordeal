@@ -32,13 +32,14 @@ def verdict(run:dict[str,Any])->tuple[bool,dict[str,Any]]:
     return proof["verdict"]=="PASS",proof
 
 def parser()->argparse.ArgumentParser:
-    p=argparse.ArgumentParser(prog="ordeal",description="Prove agent-written software behaves correctly.")
+    p=argparse.ArgumentParser(prog="ordeal",description="Verify software whose behavior is decided at runtime by models.")
     p.add_argument("--api",default=DEFAULT_API); p.add_argument("--api-key"); p.add_argument("--json",action="store_true")
     s=p.add_subparsers(dest="command"); s.add_parser("tui",help="open the terminal interface"); s.add_parser("status"); s.add_parser("seed-demo"); s.add_parser("runs")
     r=s.add_parser("run",help="execute a verification campaign"); r.add_argument("--name",default="candidate"); r.add_argument("--agent",required=True); r.add_argument("--suite",required=True); r.add_argument("--seed",type=int,default=1); r.add_argument("--repetitions",type=int,default=1); r.add_argument("--concurrency",type=int,default=16); r.add_argument("--baseline",type=int); r.add_argument("--commit"); r.add_argument("--distributed",action="store_true"); r.add_argument("--fail-on-verdict",action="store_true")
     g=s.add_parser("gate",help="use a run as a deployment gate"); g.add_argument("run_id",type=int)
     x=s.add_parser("replay",help="reproduce a stored counterexample"); x.add_argument("run_id",type=int); x.add_argument("scenario"); x.add_argument("--seed",type=int)
     c=s.add_parser("compare",help="attribute candidate regressions"); c.add_argument("baseline",type=int); c.add_argument("candidate",type=int); c.add_argument("--fail-on-regression",action="store_true")
+    v=s.add_parser("verify-runtime",help="verify an observed model-native execution"); v.add_argument("spec",help="JSON execution bundle"); v.add_argument("--fail-on-verdict",action="store_true")
     return p
 
 def main(argv:list[str]|None=None)->int:
@@ -59,6 +60,12 @@ def main(argv:list[str]|None=None)->int:
         out=client.request(f"/api/runs/{args.run_id}/gate"); emit(out); return 2 if out.get("blocking") else 0
     elif args.command=="replay":
         out=client.request("/api/replay","POST",{"run_id":args.run_id,"scenario":args.scenario,"seed":args.seed}); emit(out); return 0 if out.get("deterministic_match") else 2
+    elif args.command=="verify-runtime":
+        try:
+            with open(args.spec,encoding="utf-8") as handle: spec=json.load(handle)
+        except (OSError,json.JSONDecodeError) as exc: raise OrdealError(f"cannot read runtime spec: {exc}") from exc
+        out=client.request("/api/runtime/verify","POST",spec); emit(out)
+        return 2 if args.fail_on_verdict and out.get("blocking") else 0
     else:
         out=client.request("/api/compare","POST",{"baseline_run_id":args.baseline,"candidate_run_id":args.candidate}); emit(out)
         return 2 if args.fail_on_regression and int(out.get("new_regressions",out.get("regressions",0))) else 0

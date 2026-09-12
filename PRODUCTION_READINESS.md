@@ -4,6 +4,11 @@ Ordeal is currently an R&D prototype for local experimentation. The repository i
 
 ## Implemented prototype capabilities
 
+- model-native runtime trace verification through `POST /api/runtime/verify`;
+- canonical read/write/call/transform/visualize/decision events with causal dependencies;
+- deterministic authorization-order, data-boundary, provenance, transformation, idempotency, deny, and final-state policies;
+- hash-chained evidence, stable fingerprints, and self-contained replay bundles;
+- explicit `INCOMPLETE` verdicts for absent or unsupported contract semantics;
 - stateful deterministic simulator and canonical ledger;
 - simulated, passthrough and OpenAI-compatible generative tool simulation;
 - tool output-schema validation and regeneration retries;

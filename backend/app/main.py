@@ -14,8 +14,9 @@ from .constraints import evaluate_constraints, stability_report, constraint_summ
 from .jobs import enqueue, register_worker, heartbeat, claim, complete, serialize_job, serialize_worker
 from .security import Principal, principal_from_key, require_role, issue_api_key, audit
 from .settings import settings
+from .runtime_verifier import verify_runtime_execution
 
-app=FastAPI(title="Ordeal Enterprise API", version="1.1.0", docs_url="/docs" if settings.environment!="production" else None)
+app=FastAPI(title="Ordeal Runtime Verification API", version="1.3.0", docs_url="/docs" if settings.environment!="production" else None)
 origins=[x.strip() for x in settings.cors_origins.split(',') if x.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["GET","POST","PUT","DELETE"], allow_headers=["Content-Type","X-Ordeal-Key"])
 Base.metadata.create_all(bind=engine)
@@ -35,7 +36,7 @@ def upsert(model,name,payload,actor="system"):
     return record_to_dict(r)
 
 @app.get("/health")
-def health(): return {"ok":True,"service":"ordeal","version":"1.1.0","environment":settings.environment}
+def health(): return {"ok":True,"service":"ordeal","version":"1.3.0","environment":settings.environment}
 
 @app.get("/ready")
 def ready():
@@ -82,6 +83,14 @@ def save_suite(spec:SuiteSpec,p:Principal=Depends(require_role("operator"))):ret
 def save_dataset(spec:DatasetSpec,p:Principal=Depends(require_role("operator"))):return upsert(Dataset,spec.name,spec.model_dump(),p.name)
 @app.post("/api/constraints")
 def save_constraint(spec:ConstraintSpec,p:Principal=Depends(require_role("operator"))):return upsert(Constraint,spec.name,spec.model_dump(),p.name)
+
+
+@app.post("/api/runtime/verify")
+def verify_runtime(req:RuntimeVerificationRequest,p:Principal=Depends(require_role("operator"))):
+    """Verify an already-observed model trajectory without invoking a model."""
+    result=verify_runtime_execution(req.model_dump())
+    audit(p.name,"runtime.verify",f"executions/{req.execution}",{"verdict":result["verdict"],"fingerprint":result["fingerprint"]})
+    return result
 
 async def execute_trial(agent, scenario, world, seed):
     trial=sim.start_trial(world.get("state",{}),agent.get("tools",[]),scenario.get("faults",[]),seed,scenario)
@@ -476,4 +485,4 @@ def seed_demo(p:Principal=Depends(require_role("operator"))):
     s2=ScenarioSpec(name="payment-timeout",world=world.name,instruction="Refund despite transient lookup failure",variables={"payment_id":"p1"},faults=[{"tool":"get_payment","when":{"call":1},"inject":{"error":"timeout"}}],assertions=[{"type":"state_exists","path":"refunds.refund_0001"},{"type":"max_tool_calls","value":8}]);upsert(Scenario,s2.name,s2.model_dump(),p.name)
     suite=SuiteSpec(name="refund-regression",scenarios=[s1.name,s2.name]);upsert(Suite,suite.name,suite.model_dump(),p.name)
     constraint=ConstraintSpec(name="no-double-refund",description="The same refund request may not be issued twice with identical arguments.",severity="critical",assertion={"type":"no_duplicate_tool_args","tool":"create_refund"},bindings={"scenarios":[s1.name,s2.name]});upsert(Constraint,constraint.name,constraint.model_dump(),p.name)
-    return {"ok":True,"product":"Ordeal Enterprise","agent":agent.name,"world":world.name,"suite":suite.name,"constraint":constraint.name}
+    return {"ok":True,"product":"Ordeal","agent":agent.name,"world":world.name,"suite":suite.name,"constraint":constraint.name}
