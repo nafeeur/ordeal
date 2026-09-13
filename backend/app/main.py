@@ -14,7 +14,9 @@ from .constraints import evaluate_constraints, stability_report, constraint_summ
 from .jobs import enqueue, register_worker, heartbeat, claim, complete, serialize_job, serialize_worker
 from .security import Principal, principal_from_key, require_role, issue_api_key, audit
 from .settings import settings
-from .runtime_verifier import verify_runtime_execution
+from .runtime_verifier import SUPPORTED_EVENT_KINDS, SUPPORTED_POLICIES, verify_runtime_execution
+from .adapters import registry as adapter_registry
+from .core import ACTION_SCHEMA_VERSION, CONTRACT_SCHEMA_VERSION
 
 app=FastAPI(title="Ordeal Runtime Verification API", version="1.3.0", docs_url="/docs" if settings.environment!="production" else None)
 origins=[x.strip() for x in settings.cors_origins.split(',') if x.strip()]
@@ -52,7 +54,20 @@ def summary(p:Principal=Depends(principal_from_key)):
         counts={k:db.query(m).count() for k,m in mapping.items()}
         recent=db.execute(select(Run).order_by(Run.id.desc()).limit(20)).scalars().all()
         online=sum(1 for w in db.execute(select(Worker)).scalars() if w.status=="online")
-        return {**counts,"queue_backend":settings.queue_backend,"kafka_topic_prefix":settings.kafka_topic_prefix,"online_workers":online,"replays":sum(1 for r in recent if loads(r.payload).get("replay_of")),"recent_regressions":sum(int(loads(r.payload).get("regressions",0)) for r in recent)}
+        return {**counts,"queue_backend":settings.queue_backend,"kafka_topic_prefix":settings.kafka_topic_prefix,"online_workers":online,"replays":sum(1 for r in recent if loads(r.payload).get("replay_of")),"recent_regressions":sum(int(loads(r.payload).get("regressions",0)) for r in recent),"adapter_count":len(adapter_registry.list()),"contract_schema":CONTRACT_SCHEMA_VERSION}
+
+@app.get("/api/adapters")
+def list_adapters(kind:str|None=None,p:Principal=Depends(principal_from_key)):
+    try:return {"adapters":adapter_registry.list(kind),"count":len(adapter_registry.list(kind))}
+    except ValueError as exc:raise HTTPException(400,str(exc)) from exc
+
+@app.post("/api/adapters/conformance")
+def check_adapter(req:AdapterConformanceRequest,p:Principal=Depends(principal_from_key)):
+    return adapter_registry.check(req.kind,req.name,req.required_capabilities)
+
+@app.get("/api/runtime/capabilities")
+def runtime_capabilities(p:Principal=Depends(principal_from_key)):
+    return {"action_schema":ACTION_SCHEMA_VERSION,"contract_schema":CONTRACT_SCHEMA_VERSION,"event_kinds":sorted(SUPPORTED_EVENT_KINDS),"policy_types":sorted(SUPPORTED_POLICIES),"adapter_kinds":["target","state","runtime","fault","verifier"]}
 
 def _list_model(model):
     with SessionLocal() as db:return [record_to_dict(x) for x in db.execute(select(model).order_by(model.id.desc())).scalars()]
@@ -87,7 +102,7 @@ def save_constraint(spec:ConstraintSpec,p:Principal=Depends(require_role("operat
 
 @app.post("/api/runtime/verify")
 def verify_runtime(req:RuntimeVerificationRequest,p:Principal=Depends(require_role("operator"))):
-    """Verify an already-observed model trajectory without invoking a model."""
+    """Verify an already-observed execution without invoking its target."""
     result=verify_runtime_execution(req.model_dump())
     audit(p.name,"runtime.verify",f"executions/{req.execution}",{"verdict":result["verdict"],"fingerprint":result["fingerprint"]})
     return result

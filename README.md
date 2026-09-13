@@ -1,6 +1,6 @@
 <p align="center">
   <strong>ORDEAL</strong><br/>
-  <em>Verify what model-native software actually does.</em>
+  <em>Verify what autonomous software actually does.</em>
 </p>
 
 <p align="center">
@@ -10,23 +10,23 @@
   <img alt="License" src="https://img.shields.io/badge/license-MIT-11110f">
 </p>
 
-Ordeal is an open-source runtime verification system for software whose behavior is selected dynamically by models.
+**Ordeal is a model- and infrastructure-agnostic runtime verification layer for autonomous software.**
 
-Instead of trusting a model's explanation of what it did, Ordeal evaluates an observed sequence of reads, transformations, writes, and service calls against deterministic policies. The result is `PASS`, `FAIL`, or `INCOMPLETE`, accompanied by concrete evidence and a replayable input bundle.
+Instead of trusting an autonomous system's explanation of what it did, Ordeal evaluates an observed sequence of reads, transformations, writes, and service calls against deterministic policies. The result is `PASS`, `FAIL`, or `INCOMPLETE`, accompanied by concrete evidence and a replayable input bundle.
 
-> **Models choose behavior. Ordeal verifies consequences.**
+> **Autonomy chooses behavior. Ordeal verifies consequences.**
 
 Ordeal is not production-ready and must not be used as a security boundary or connected to live, irreversible systems.
 
 ## Why this exists
 
-Traditional backends encode behavior primarily in fixed code paths. In model-native software, behavior can instead emerge from:
+Traditional backends encode behavior primarily in fixed code paths. In autonomous software, behavior can instead emerge from:
 
 ```text
-model + context + tools + live state + policy
+planner or model + context + tools + live state + policy
 ```
 
-A model may decide which databases to read, how to transform records, where to write them, and which services to invoke. Reviewing a final answer or final state is insufficient: the outcome may look correct even when the model accessed forbidden data, skipped authorization, fabricated provenance, or repeated an irreversible action.
+An agent, workflow engine, model, or other autonomous controller may decide which databases to read, how to transform records, where to write them, and which services to invoke. Reviewing only its final answer or final state is insufficient: the outcome may look correct even when the system accessed forbidden data, skipped authorization, fabricated provenance, or repeated an irreversible action.
 
 Ordeal treats the execution trajectory as the program under test.
 
@@ -36,12 +36,12 @@ Ordeal currently has two complementary verification paths.
 
 | Path | Purpose | Status |
 | --- | --- | --- |
-| **Runtime verifier** | Evaluate a caller-supplied model execution trace against deterministic policies | Experimental |
+| **Runtime verifier** | Evaluate any caller-supplied autonomous execution trace against deterministic policies | Experimental |
 | **Adversarial simulator** | Exercise agents in stateful test worlds with controlled faults and deterministic constraints | Experimental |
 
 ### Runtime verifier
 
-`POST /api/runtime/verify` accepts an execution contract, initial and final state, and a sequence of observed boundary events. It does not invoke a model.
+`POST /api/runtime/verify` accepts an execution contract, initial and final state, and a sequence of observed boundary events. It does not invoke the target system.
 
 Supported event kinds:
 
@@ -62,6 +62,42 @@ Supported policies:
 | `state_assertion` | The supplied final state satisfies a deterministic invariant |
 
 The verifier normalizes events, validates ordering and dependency references, computes a content hash chain, evaluates the contract, and returns policy results, counterevidence, state hashes, a stable fingerprint, and a replay bundle.
+
+## Agnostic by contract
+
+Ordeal's stable core is deliberately smaller than any one agent framework or deployment stack:
+
+| Boundary | Canonical contract | Replaceable implementations |
+| --- | --- | --- |
+| **Target** | emits or accepts `ActionEnvelope` values | mock target, HTTP service, OpenAI-compatible endpoint, recorded trace |
+| **State** | snapshot, restore, hash, exact mutation | built-in memory ledger today; databases and filesystems can implement the same protocol |
+| **Runtime** | execute, schedule, seed, replay | local asyncio and experimental Kafka workers |
+| **Faults** | apply a named fault at an explicit phase | seeded pre-execution and post-commit simulation |
+| **Verifier** | contract + evidence → scoped verdict | built-in deterministic policy engine |
+
+Every observed action is normalized to `ordeal.action/v1`; contracts use `ordeal.contract/v1`. Adapter-specific fields remain attached as evidence, so normalization does not erase useful runtime detail.
+
+Adapters declare capabilities instead of relying on vendor names. Before a run, Ordeal can check whether an adapter satisfies the required boundary and refuse incompatible configurations:
+
+```bash
+python ordeal_cli.py adapters
+python ordeal_cli.py adapters --kind runtime
+python ordeal_cli.py check-adapter state memory --require snapshot --require restore
+```
+
+The same discovery and conformance checks are available through `GET /api/adapters`, `POST /api/adapters/conformance`, and `GET /api/runtime/capabilities`. Registration describes functionality that exists in this repository; Docker or Kubernetes packaging is not presented as a runtime adapter until it implements the runtime contract.
+
+A verification contract can make capabilities mandatory:
+
+```json
+{
+  "requires": {"state": ["snapshot", "restore"], "fault": ["after_commit"]},
+  "adapters": {"state": "memory", "fault": "simulated"},
+  "policies": []
+}
+```
+
+Missing adapters or capabilities yield `INCOMPLETE`; Ordeal does not silently claim a weaker verification boundary.
 
 ### Adversarial simulator
 
@@ -87,7 +123,7 @@ Ordeal is terminal-native. The Textual TUI includes:
 - campaign creation and run history;
 - behavioral timelines and counterevidence inspection;
 - replay and failure-shrinking actions;
-- a Runtime view for loading and verifying a JSON execution bundle;
+- a Runtime view for loading and verifying any canonical JSON execution bundle;
 - compact terminal layouts, keyboard navigation, and a command palette.
 
 ```text
@@ -124,7 +160,7 @@ make tui
 
 The API is available at `http://localhost:8000`; interactive API documentation is available at `/docs` in development mode.
 
-### Verify an observed runtime trace
+### Verify an observed autonomous runtime trace
 
 With the API running:
 
@@ -134,7 +170,7 @@ python ordeal_cli.py verify-runtime \
   --fail-on-verdict
 ```
 
-The included example represents a model that:
+The included example represents an autonomous workflow that:
 
 1. reads a customer from Salesforce;
 2. checks a legal-hold service;
@@ -192,7 +228,7 @@ A runtime verification request has four principal parts:
 
 Events may declare `depends_on` relationships to earlier event IDs. These relationships are assertions supplied by the trace producer; Ordeal checks their structure and evaluates provenance policies over them, but it does not independently discover causality.
 
-See [`examples/model-native-runtime/verified.json`](examples/model-native-runtime/verified.json) for a complete contract and trace.
+See [`examples/model-native-runtime/verified.json`](examples/model-native-runtime/verified.json) for a complete contract and trace. The example directory retains its original name for compatibility.
 
 ## Verdicts
 
@@ -206,7 +242,8 @@ A pass is limited to the declared contract and supplied evidence. It is not proo
 
 ## Current limitations
 
-- Ordeal accepts traces but does not yet provide a production trace-collection SDK, gateway, or sidecar.
+- Ordeal accepts canonical traces but does not yet provide production trace collectors for every framework or infrastructure provider.
+- The adapter protocols and capability registry are stable boundaries; most third-party state and runtime adapters still need implementations.
 - Runtime verification results are returned to the caller but are not stored as first-class database records.
 - Dependency edges are declared by the trace producer; they are structurally checked, not independently inferred.
 - The event hash chain is content-addressed, not signed. It only detects mismatch when the expected chain head comes from a trusted source.

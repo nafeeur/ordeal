@@ -1,4 +1,4 @@
-"""Deterministic verification for software whose behavior is chosen at runtime.
+"""Deterministic verification for autonomous software observed at runtime.
 
 The model is not a source of truth.  This module consumes observed boundary events,
 checks them against an explicit contract, and returns a replayable evidence bundle.
@@ -11,6 +11,8 @@ from collections import defaultdict
 from typing import Any
 
 from .engine import evaluate_assertions, get_path, stable_hash
+from .core.contracts import CONTRACT_SCHEMA_VERSION, VerificationVerdict, normalize_action
+from .adapters import registry as adapter_registry
 
 
 SUPPORTED_EVENT_KINDS = {"read", "write", "delete", "call", "transform", "visualize", "decision"}
@@ -83,7 +85,7 @@ def _validate_events(events: list[dict[str, Any]]) -> tuple[list[dict[str, Any]]
     seen: set[str] = set()
     previous_seq = -1
     for index, raw in enumerate(events):
-        event = copy.deepcopy(raw)
+        event = normalize_action(raw, index) if isinstance(raw, dict) else copy.deepcopy(raw)
         if not isinstance(event, dict):
             problems.append({"event": f"event-{index + 1:04d}", "reason": "event must be an object"})
             event = {"kind": None, "data": {}}
@@ -220,7 +222,7 @@ def _evaluate_policy(
 
 
 def verify_runtime_execution(spec: dict[str, Any]) -> dict[str, Any]:
-    """Verify one observed model-native execution against an explicit contract."""
+    """Verify one observed execution against an explicit, technology-neutral contract."""
     contract = copy.deepcopy(spec.get("contract") or {})
     initial_state = copy.deepcopy(spec.get("initial_state") or {})
     final_state = copy.deepcopy(spec.get("final_state") or {})
@@ -231,6 +233,27 @@ def verify_runtime_execution(spec: dict[str, Any]) -> dict[str, Any]:
     policies = contract.get("policies") or []
     results = []
     unresolved = []
+    adapter_conformance = []
+    selected_adapters = spec.get("adapters") or contract.get("adapters") or {}
+    requirements = contract.get("requires") or {}
+    if not isinstance(selected_adapters, dict):
+        unresolved.append({"adapter": "selection", "reason": "adapters must be an object", "missing": []})
+        selected_adapters = {}
+    if not isinstance(requirements, dict):
+        unresolved.append({"adapter": "requirements", "reason": "requires must be an object", "missing": []})
+        requirements = {}
+    for kind, required in requirements.items():
+        if not isinstance(required, list) or not all(isinstance(item, str) for item in required):
+            unresolved.append({"adapter": str(kind), "reason": "required capabilities must be a list of strings", "missing": []})
+            continue
+        name = selected_adapters.get(kind)
+        if not name:
+            report = {"compatible": False, "adapter": {"kind": kind, "name": None}, "required": sorted(required), "missing": sorted(required), "reason": "contract requires an adapter selection"}
+        else:
+            report = adapter_registry.check(kind, name, required)
+        adapter_conformance.append(report)
+        if not report["compatible"]:
+            unresolved.append({"adapter": f"{kind}/{name or 'unselected'}", "reason": report["reason"], "missing": report["missing"]})
     for policy in policies:
         if not isinstance(policy, dict):
             unresolved.append({"policy": "unnamed", "reason": "policy must be an object"})
@@ -253,21 +276,23 @@ def verify_runtime_execution(spec: dict[str, Any]) -> dict[str, Any]:
 
     blocking = [result for result in results if not result["passed"]]
     if integrity_problems or blocking:
-        verdict = "FAIL"
+        verdict = VerificationVerdict.FAIL.value
     elif unresolved:
-        verdict = "INCOMPLETE"
+        verdict = VerificationVerdict.INCOMPLETE.value
     else:
-        verdict = "PASS"
+        verdict = VerificationVerdict.PASS.value
 
     replay_bundle = {
         "contract": contract,
         "initial_state": initial_state,
         "final_state": final_state,
         "events": events,
+        "adapters": selected_adapters,
         "expected_chain_head": chain_head,
     }
     return {
         "verdict": verdict,
+        "contract_schema": contract.get("schema_version") or CONTRACT_SCHEMA_VERSION,
         "blocking": verdict != "PASS",
         "scope": "verified observed behavior within the declared contract",
         "execution": spec.get("execution") or "runtime-execution",
@@ -281,6 +306,7 @@ def verify_runtime_execution(spec: dict[str, Any]) -> dict[str, Any]:
             "integrity_problems": len(integrity_problems),
         },
         "policy_results": results,
+        "adapter_conformance": adapter_conformance,
         "violations": [result for result in results if not result["passed"]],
         "unresolved": unresolved,
         "integrity_problems": integrity_problems,
