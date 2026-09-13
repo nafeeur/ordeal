@@ -32,14 +32,16 @@ def verdict(run:dict[str,Any])->tuple[bool,dict[str,Any]]:
     return proof["verdict"]=="PASS",proof
 
 def parser()->argparse.ArgumentParser:
-    p=argparse.ArgumentParser(prog="ordeal",description="Verify software whose behavior is decided at runtime by models.")
+    p=argparse.ArgumentParser(prog="ordeal",description="Model- and infrastructure-agnostic runtime verification for autonomous software.")
     p.add_argument("--api",default=DEFAULT_API); p.add_argument("--api-key"); p.add_argument("--json",action="store_true")
     s=p.add_subparsers(dest="command"); s.add_parser("tui",help="open the terminal interface"); s.add_parser("status"); s.add_parser("seed-demo"); s.add_parser("runs")
     r=s.add_parser("run",help="execute a verification campaign"); r.add_argument("--name",default="candidate"); r.add_argument("--agent",required=True); r.add_argument("--suite",required=True); r.add_argument("--seed",type=int,default=1); r.add_argument("--repetitions",type=int,default=1); r.add_argument("--concurrency",type=int,default=16); r.add_argument("--baseline",type=int); r.add_argument("--commit"); r.add_argument("--distributed",action="store_true"); r.add_argument("--fail-on-verdict",action="store_true")
     g=s.add_parser("gate",help="use a run as a deployment gate"); g.add_argument("run_id",type=int)
     x=s.add_parser("replay",help="reproduce a stored counterexample"); x.add_argument("run_id",type=int); x.add_argument("scenario"); x.add_argument("--seed",type=int)
     c=s.add_parser("compare",help="attribute candidate regressions"); c.add_argument("baseline",type=int); c.add_argument("candidate",type=int); c.add_argument("--fail-on-regression",action="store_true")
-    v=s.add_parser("verify-runtime",help="verify an observed model-native execution"); v.add_argument("spec",help="JSON execution bundle"); v.add_argument("--fail-on-verdict",action="store_true")
+    v=s.add_parser("verify-runtime",help="verify an observed autonomous execution"); v.add_argument("spec",help="JSON execution bundle"); v.add_argument("--fail-on-verdict",action="store_true")
+    a=s.add_parser("adapters",help="discover installed verification adapters"); a.add_argument("--kind",choices=["target","state","runtime","fault","verifier"])
+    k=s.add_parser("check-adapter",help="check adapter capabilities before execution"); k.add_argument("kind",choices=["target","state","runtime","fault","verifier"]); k.add_argument("name"); k.add_argument("--require",action="append",default=[],dest="required")
     return p
 
 def main(argv:list[str]|None=None)->int:
@@ -66,6 +68,12 @@ def main(argv:list[str]|None=None)->int:
         except (OSError,json.JSONDecodeError) as exc: raise OrdealError(f"cannot read runtime spec: {exc}") from exc
         out=client.request("/api/runtime/verify","POST",spec); emit(out)
         return 2 if args.fail_on_verdict and out.get("blocking") else 0
+    elif args.command=="adapters":
+        suffix=f"?kind={args.kind}" if args.kind else ""
+        out=client.request("/api/adapters"+suffix)
+    elif args.command=="check-adapter":
+        out=client.request("/api/adapters/conformance","POST",{"kind":args.kind,"name":args.name,"required_capabilities":args.required})
+        emit(out); return 0 if out.get("compatible") else 2
     else:
         out=client.request("/api/compare","POST",{"baseline_run_id":args.baseline,"candidate_run_id":args.candidate}); emit(out)
         return 2 if args.fail_on_regression and int(out.get("new_regressions",out.get("regressions",0))) else 0

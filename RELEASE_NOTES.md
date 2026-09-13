@@ -1,5 +1,14 @@
 > **Project status:** Ordeal is an R&D prototype. Production-shaped deployment files and advanced lab features are experimental and are not a production-readiness claim.
 
+## Unreleased — Agnostic verification core
+
+- Defined Ordeal as a model- and infrastructure-agnostic runtime verification layer for autonomous software.
+- Added canonical `ordeal.action/v1` and `ordeal.contract/v1` boundaries.
+- Added structural target, state, runtime, fault, and verifier protocols with no required base class.
+- Added capability-based adapter discovery and fail-closed conformance checks through the API and CLI.
+- Normalized simulator tool calls into canonical action envelopes while preserving legacy and adapter-specific evidence.
+- Kept provider-specific target execution behind adapters; no model provider owns policy or verdict truth.
+
 ## 1.3.0 — Model-native runtime verification
 
 - Reframed Ordeal around deterministic verification for software whose behavior is selected at runtime by models.

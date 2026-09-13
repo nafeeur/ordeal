@@ -1,15 +1,31 @@
-# Ordeal 1.3.0 Research Architecture
+# Ordeal Research Architecture
 
 > **Status:** Ordeal is an R&D prototype. This document describes both the current local implementation and an experimental distributed design. It is not a claim of production readiness.
 
-Ordeal is a runtime verification system for model-native software, with an adversarial simulator for pre-deployment testing. The core invariant is: **models may choose actions; deterministic code owns policy, evidence, and pass/fail truth whenever the property is expressible in code.**
+Ordeal is a model- and infrastructure-agnostic runtime verification layer for autonomous software, with an adversarial simulator for pre-deployment testing. The core invariant is: **autonomous systems may choose actions; deterministic code owns policy, evidence, and pass/fail truth whenever the property is expressible in code.**
 
-## Model-native runtime verification
+## Stable core, replaceable edges
+
+Ordeal does not make a model provider, agent framework, database, queue, container system, or cloud part of its truth model. Technology-specific behavior terminates at five structural protocols:
+
+| Protocol | Responsibility |
+| --- | --- |
+| `TargetAdapter` | invoke or observe the autonomous system under test |
+| `StateAdapter` | snapshot and restore canonical world state |
+| `RuntimeAdapter` | execute and schedule canonical actions |
+| `FaultAdapter` | inject a named fault at a declared phase |
+| `Verifier` | reduce a contract and evidence bundle to a scoped verdict |
+
+Adapters publish machine-readable capabilities. Verification contracts can require capabilities such as `snapshot`, `restore`, `after_commit`, or `replay`; the registry reports incompatibility before execution instead of silently weakening the boundary.
+
+The canonical `ordeal.action/v1` envelope carries action identity, order, kind, name, actor, data, dependencies, classifications, service, adapter, and runtime. Adapter-specific fields are preserved. `ordeal.contract/v1` identifies the deterministic contract boundary.
+
+## Autonomous runtime verification
 
 The runtime path accepts observations from a capability gateway, sidecar, service mesh, or application SDK. Each normalized event describes a read, write, delete, call, transformation, visualization, or decision and can declare causal dependencies on earlier events.
 
 ```text
-intent + model + context
+intent + autonomous controller
           │
           ▼
 instrumented capabilities
@@ -35,7 +51,7 @@ PASS / FAIL / INCOMPLETE + replay bundle
 
 Events are normalized and hash-chained. Policies are deliberately constrained data structures rather than arbitrary code or model prompts. A missing/unsupported policy produces `INCOMPLETE`; structural trace corruption or a critical/major violation produces `FAIL`. A `PASS` is always scoped to the supplied observations and declared contract—it is not a claim that unobserved behavior was safe.
 
-The initial implementation supports seven policy types: `deny`, `require_before`, `data_boundary`, `max_occurrences`, `require_dependency`, `transformation`, and `state_assertion`. `POST /api/runtime/verify` performs verification without invoking a model and returns a self-contained replay bundle.
+The initial implementation supports seven policy types: `deny`, `require_before`, `data_boundary`, `max_occurrences`, `require_dependency`, `transformation`, and `state_assertion`. `POST /api/runtime/verify` performs verification without invoking the target and returns a self-contained replay bundle.
 
 ## Control plane
 

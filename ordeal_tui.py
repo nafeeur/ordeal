@@ -156,7 +156,7 @@ class CommandPalette(ModalScreen[str | None]):
     COMMANDS = [
         ("overview", "Open overview", "1"), ("runs", "Open verification runs", "2"),
         ("campaign", "Create verification campaign", "3"), ("evidence", "Inspect counterevidence", "4"),
-        ("runtime", "Verify a model-native runtime trace", "5"),
+        ("runtime", "Verify an autonomous runtime trace", "5"),
         ("refresh", "Refresh verifier telemetry", "R"), ("replay", "Replay selected counterexample", "R"),
         ("shrink", "Shrink selected counterexample", "S"), ("capture", "Save deterministic UI capture", ""),
     ]
@@ -245,7 +245,7 @@ class OrdealTUI(App):
                         yield VerificationBeam(id="beam")
                     with Vertical(id="system", classes="panel"):
                         yield Label("SYSTEM", classes="panel-title")
-                        yield Static("API       CONNECTING\nWORKERS            —\nQUEUE              —\nWORLDS             —", id="system-body")
+                        yield Static("API       CONNECTING\nWORKERS            —\nQUEUE              —\nWORLDS             —\nADAPTERS           —", id="system-body")
                     with Vertical(id="coverage", classes="panel"):
                         yield Label("VERIFICATION BOUNDARY", classes="panel-title")
                         yield Static("No campaign evidence loaded.", id="coverage-body")
@@ -285,8 +285,8 @@ class OrdealTUI(App):
                             yield Button("SHRINK  S", id="shrink-button")
             with Container(id="runtime", classes="screen"):
                 with Vertical(id="runtime-shell", classes="panel"):
-                    yield Label("MODEL-NATIVE RUNTIME", classes="eyebrow")
-                    yield Static("Verify an observed trajectory against a deterministic contract. The model is never asked to grade itself.", classes="muted")
+                    yield Label("AUTONOMOUS RUNTIME", classes="eyebrow")
+                    yield Static("Verify any observed trajectory against a deterministic contract. The target never grades itself.", classes="muted")
                     with Horizontal(classes="step"):
                         yield Label("01", classes="step-number")
                         yield Input(value="examples/model-native-runtime/verified.json", placeholder="Execution bundle (.json)", id="runtime-path", classes="step-field")
@@ -364,7 +364,7 @@ class OrdealTUI(App):
         self.online = True; self.runs = runs; self.agents = agents; self.suites = suites
         self.target_name = self.client.base_url.removeprefix("http://").removeprefix("https://")
         self.query_one("#topbar", ChromeBar).set_data(self); self.render_status()
-        self.query_one("#system-body", Static).update(f"API       [{T.success}]ONLINE[/]\nWORKERS   {s.get('online_workers',0):>10}\nQUEUE     {str(s.get('queue_backend','local')).upper():>10}\nWORLDS    {s.get('worlds',0):>10}")
+        self.query_one("#system-body", Static).update(f"API       [{T.success}]ONLINE[/]\nWORKERS   {s.get('online_workers',0):>10}\nQUEUE     {str(s.get('queue_backend','local')).upper():>10}\nWORLDS    {s.get('worlds',0):>10}\nADAPTERS  {s.get('adapter_count',0):>10}")
         self.refresh_run_tables(); self.refresh_selects(); self.render_latest_gate(); self.render_coverage(s)
 
     def refresh_selects(self) -> None:
@@ -485,7 +485,10 @@ class OrdealTUI(App):
     def finish_runtime(self,result:dict[str,Any])->None:
         self.query_one("#runtime-button",Button).disabled=False
         verdict=result.get("verdict","INCOMPLETE"); colour=T.success if verdict=="PASS" else T.danger if verdict=="FAIL" else T.warning
-        summary=result.get("summary",{}); lines=[f"[bold {colour}]{verdict}[/]  {result.get('execution','—')}",f"CONTRACT     {result.get('contract','—')}",f"FINGERPRINT  {result.get('fingerprint','—')}",f"CHAIN HEAD   {result.get('evidence',{}).get('chain_head','—')}","",f"EVENTS {summary.get('events',0)}   POLICIES {summary.get('policies',0)}   PASSED {summary.get('passed',0)}   VIOLATED {summary.get('violated',0)}"]
+        summary=result.get("summary",{}); lines=[f"[bold {colour}]{verdict}[/]  {result.get('execution','—')}",f"CONTRACT     {result.get('contract','—')}",f"SCHEMA       {result.get('contract_schema','—')}",f"FINGERPRINT  {result.get('fingerprint','—')}",f"CHAIN HEAD   {result.get('evidence',{}).get('chain_head','—')}","",f"EVENTS {summary.get('events',0)}   POLICIES {summary.get('policies',0)}   PASSED {summary.get('passed',0)}   VIOLATED {summary.get('violated',0)}"]
+        for report in result.get("adapter_conformance",[]):
+            adapter=report.get("adapter",{}); marker=GLYPH["pass"] if report.get("compatible") else GLYPH["fail"]
+            lines.append(f"{marker} ADAPTER {adapter.get('kind','?')}/{adapter.get('name','unselected')}")
         failures=result.get("violations",[])
         if failures:
             lines.extend(["",f"[bold {T.danger}]COUNTEREVIDENCE[/]"])

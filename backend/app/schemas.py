@@ -160,4 +160,10 @@ class RuntimeVerificationRequest(BaseModel):
     initial_state: dict[str, Any] = Field(default_factory=dict)
     final_state: dict[str, Any] = Field(default_factory=dict)
     events: list[dict[str, Any]] = Field(default_factory=list)
+    adapters: dict[str, str] = Field(default_factory=dict)
     expected_chain_head: str | None = None
+
+class AdapterConformanceRequest(BaseModel):
+    kind: Literal["target","state","runtime","fault","verifier"]
+    name: str
+    required_capabilities: list[str] = Field(default_factory=list)

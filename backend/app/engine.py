@@ -2,6 +2,7 @@ import asyncio, copy, hashlib, json, random, time, uuid
 from dataclasses import dataclass, field
 from typing import Any
 import httpx
+from .core.contracts import normalize_action
 from .settings import settings
 
 
@@ -163,7 +164,7 @@ class SimulationEngine:
         fault_phase = (fault or {}).get("inject", {}).get("phase", "before_execution")
         if fault and fault_phase != "after_commit":
             result = await self._apply_fault(fault)
-            trial.events.append({"seq": len(trial.events), "type":"tool.call", "tool":name, "occurrence":occurrence, "args":copy.deepcopy(args), "result":result, "fault":fault, "state_before":before_hash, "state_after":stable_hash(trial.state)})
+            trial.events.append(normalize_action({"seq": len(trial.events), "type":"tool.call", "tool":name, "adapter":"simulated", "runtime":"local", "occurrence":occurrence, "args":copy.deepcopy(args), "result":result, "fault":fault, "state_before":before_hash, "state_after":stable_hash(trial.state)}, len(trial.events)))
             return result
 
         mode = tool.get("mode", "simulated")
@@ -190,9 +191,9 @@ class SimulationEngine:
         if fault and fault_phase == "after_commit":
             committed_result = copy.deepcopy(result)
             visible_result = await self._apply_fault(fault)
-            trial.events.append({"seq": len(trial.events), "type":"tool.call", "tool":name, "occurrence":occurrence, "args":copy.deepcopy(args), "result":copy.deepcopy(visible_result), "committed_result":committed_result, "fault":fault, "fault_phase":"after_commit", "mode":mode, "state_before":before_hash, "state_after":stable_hash(trial.state)})
+            trial.events.append(normalize_action({"seq": len(trial.events), "type":"tool.call", "tool":name, "adapter":mode, "runtime":"local", "occurrence":occurrence, "args":copy.deepcopy(args), "result":copy.deepcopy(visible_result), "committed_result":committed_result, "fault":fault, "fault_phase":"after_commit", "mode":mode, "state_before":before_hash, "state_after":stable_hash(trial.state)}, len(trial.events)))
             return visible_result
-        trial.events.append({"seq": len(trial.events), "type":"tool.call", "tool":name, "occurrence":occurrence, "args":copy.deepcopy(args), "result":copy.deepcopy(result), "mode":mode, "state_before":before_hash, "state_after":stable_hash(trial.state)})
+        trial.events.append(normalize_action({"seq": len(trial.events), "type":"tool.call", "tool":name, "adapter":mode, "runtime":"local", "occurrence":occurrence, "args":copy.deepcopy(args), "result":copy.deepcopy(result), "mode":mode, "state_before":before_hash, "state_after":stable_hash(trial.state)}, len(trial.events)))
         return result
 
     async def _simulate_llm(self, trial, tool, args, occurrence):
