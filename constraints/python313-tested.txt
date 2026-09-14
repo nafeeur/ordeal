@@ -1,6 +1,6 @@
 # Observed tested profile, not a cross-platform lockfile.
 # Install extras explicitly; this file constrains versions only.
-alembic==1.18.4
+alembic==1.20.0
 annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.13.0
