@@ -1,32 +1,45 @@
-# Ordeal 0.3.0 — standalone agent behavior platform
+<p align="center">
+  <strong>ORDEAL</strong><br/>
+  <em>Test what an agent does, observe what it did, and turn failures into lasting regression tests.</em>
+</p>
 
-**Test what an agent does, observe what it did, and turn failures into lasting regression tests.**
+<p align="center">
+  <a href="https://github.com/nafeeur/ordeal/actions/workflows/behavior-sdk.yml"><img alt="CI" src="https://github.com/nafeeur/ordeal/actions/workflows/behavior-sdk.yml/badge.svg"></a>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-3776AB">
+  <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue">
+  <img alt="Status" src="https://img.shields.io/badge/status-evaluation%20%2F%20pilot-orange">
+</p>
 
-Ordeal combines an Apache-2.0 local Python simulator with a self-hosted team server, web console, authenticated telemetry ingestion, versioned datasets, evaluators, and private runners. It does not depend on a hosted account, Kafka, or a proprietary service. The TypeScript client is also included.
+Ordeal is a local-first platform for testing and observing what an AI agent actually does — not what it says it did. It pairs a Python behavior simulator (stateful `World`s, tool-calling `Scenario`s, deterministic assertions) with a self-hosted team server for capturing production traces, versioning them into replayable regression suites, and running experiments across models. Everything runs on your own infrastructure: no hosted account, no Kafka, no proprietary service required. A TypeScript client is included for non-Python agents.
 
-This is an implementation release for evaluation and controlled pilots, **not a certification or a claim that every enterprise deployment has been validated**. The [56-feature status matrix](docs/enterprise/CAPABILITY_MATRIX.md) separates working code, deployment templates, unvalidated external integrations, and organizational requirements. Read the [test report](docs/TESTING.md) before treating a feature as production-qualified.
+This is an implementation release for evaluation and controlled pilots, not a certification that every feature is production-qualified. The [56-feature capability matrix](docs/enterprise/CAPABILITY_MATRIX.md) separates working code from deployment templates and unvalidated integrations; read the [test report](docs/TESTING.md) before relying on any specific feature.
 
-> **A note on this repository.** This branch replaces a previous, unrelated implementation of "Ordeal" (a FastAPI + terminal-UI runtime verifier) that lived on `main` before 2026-09-14. That project is preserved, unmodified, on the [`archive/pre-standalone-2026-09-14`](../../tree/archive/pre-standalone-2026-09-14) branch. Nothing from it was deleted — this is a deliberate replacement of what `main` points to, not a merge of the two.
+## Contents
 
-## What's here
+- [Why](#why)
+- [Quickstart](#quickstart)
+- [LLMAgent: real models against simulated worlds](#llmagent-real-models-against-simulated-worlds)
+- [Screenshots](#screenshots)
+- [Capturing production behavior](#capturing-production-behavior)
+- [Running a private worker](#running-a-private-worker)
+- [Closing the production-to-regression loop](#closing-the-production-to-regression-loop)
+- [Capabilities](#capabilities)
+- [Known limitations](#known-limitations)
+- [Testing the release](#testing-the-release)
+- [Before selling a hosted service](#before-selling-a-hosted-service)
 
-- A local Python simulator: stateful `World`s, tool-calling `Scenario`s, deterministic assertions (`ToolCalled`, `ToolOrder`, `StateEquals`, ...), fault injection, flakiness detection, and baseline regression comparison.
-- A self-hosted team server + web console for capturing production traces, versioning them into replayable datasets, running experiments, and queuing private runners.
-- **`LLMAgent`** (new): a built-in agent that drives a real model — OpenAI, OpenRouter, or any OpenAI-compatible endpoint — through a `World`'s own tools, with automatic schema generation, rate limiting, retry, and usage/cost tracking. See [below](#llmagent-real-models-against-simulated-worlds).
+## Why
 
-## Screenshots
+Reviewing an agent's final answer, or its final state, understates the risk. An agent can produce a plausible-looking result while having skipped an authorization check, called a tool it shouldn't have, or claimed to complete an action it never actually took. Ordeal treats the full tool-call trajectory — not just the output — as the thing under test:
 
-The web console after running a real-model evaluation suite (`ordeal-behavior experiment`, four models compared via OpenRouter):
+- **`World`** — a stateful, deterministic simulation of the systems an agent acts on (a database, a payment rail, an access-control service), so reads reflect earlier writes across a multi-step task.
+- **`Scenario`** — a natural-language instruction plus assertions evaluated against the resulting trajectory and final state: `ToolCalled`, `ToolOrder`, `StateEquals`, `ToolNotCalled`, or a custom predicate.
+- **Fault injection** — inject a timeout, error, or delay on a specific tool call to verify the agent degrades correctly instead of hanging or fabricating success.
+- **Repetition and regression** — run a scenario multiple times to catch flakiness, and compare a report against a saved baseline to gate a change before it ships.
 
-![Experiment detail: 27/27 scenarios passing for openai/gpt-oss-120b, $0.0025 total cost](docs/screenshots/experiment-passing.jpg)
-*`openai/gpt-oss-120b` — 27/27 scenario runs pass across payments, IT access, inventory, and a research/publish chain, including three adversarial prompt-injection cases.*
+## Quickstart
 
-![Experiment detail: 40.7% pass rate for google/gemini-2.5-flash-lite, with several ERROR verdicts](docs/screenshots/experiment-failing.jpg)
-*`google/gemini-2.5-flash-lite` — the same suite drops to 40.7% pass. The `ERROR` rows are a real, reproducible `MALFORMED_FUNCTION_CALL` failure from the provider on specific tool schemas, not a harness bug — `LLMAgent` retries automatically and reports the verdict honestly instead of hanging or fabricating a pass.*
-
-## Start locally
-
-Use Python 3.10+ in a virtual environment. This source tree and its wheel are the installation targets; this release has **not** been published to PyPI or npm.
+Requires Python 3.10+ in a virtual environment. This source tree and its wheel are the installation targets — this release has not been published to PyPI or npm.
 
 ```bash
 python -m venv .venv
@@ -36,9 +49,9 @@ ordeal-server init --name 'My organization'
 ordeal-server serve
 ```
 
-Open `http://127.0.0.1:8080`. Sign in using the token printed once by `init`. Save the project ID for SDK/runner use. Initialization creates a private `.ordeal` directory, a restricted `.ordeal/master.key`, and an SQLite database. Preserve that key separately from encrypted backups. Re-running initialization does not erase existing data or reprint old tokens.
+Open `http://127.0.0.1:8080` and sign in with the token printed once by `init`. Save the project ID for SDK/runner use. Initialization creates a private `.ordeal` directory, a restricted `.ordeal/master.key`, and an SQLite database — keep that key backed up separately from any encrypted database backup. Re-running `init` does not erase existing data or reprint old tokens.
 
-For **local behavior testing only**, install `python -m pip install -e .`. Server dependencies are optional.
+For local behavior testing only, server dependencies are optional:
 
 ```bash
 ordeal-behavior init
@@ -47,11 +60,11 @@ ordeal-behavior run examples/enterprise/suite.py --json report.json --junit repo
 ordeal-server gate report.json --summary summary.md
 ```
 
-The enterprise fixture suite covers authorized/denied payments, authorization timeouts, IT access, stock reservation, retry, and a research-review-publication chain. These are simulated applications, not live financial or identity systems.
+The enterprise fixture suite covers authorized/denied payments, authorization timeouts, IT access, stock reservation, retry, and a research-review-publish chain — all simulated, not live financial or identity systems.
 
-## LLMAgent: real models against simulated Worlds
+## LLMAgent: real models against simulated worlds
 
-Every other agent adapter in this package (`CallableAgent`, `HTTPAgent`, `CommandAgent`) expects you to already have an agent to wrap. `LLMAgent` *is* one: point it at a model and a `World`, and it runs the full OpenAI-compatible tool-calling loop itself — deriving the function-calling schema from the `World`'s own tools (via `tool_manifest`), rate-limiting and retrying requests through the built-in `ProviderLimiter`, recovering from a provider returning a malformed or empty tool call, and rolling prompt/completion tokens and cost into the scenario report automatically.
+Every other agent adapter (`CallableAgent`, `HTTPAgent`, `CommandAgent`) expects you to bring your own agent to wrap. `LLMAgent` is one: point it at a model and a `World`, and it runs the full tool-calling loop itself — deriving the function-calling schema from the `World`'s own tools via `tool_manifest()`, rate-limiting and retrying requests through the built-in `ProviderLimiter`, recovering when a provider returns a malformed or empty tool call, and rolling prompt/completion tokens and cost into the scenario report.
 
 ```python
 from ordeal_agent import LLMAgent, Scenario, StateEquals, Suite, ToolCalled, ToolOrder, World, simulated
@@ -96,9 +109,7 @@ suite = Suite.of("refund", Scenario(
 ))
 ```
 
-`StateEquals` and `ToolCalled` together catch a real failure mode plain output-matching misses entirely: a model that *says* "I've refunded your order" without ever calling `refund_order`. That exact case — caught against a live model, not a mock — is what motivated adding `LLMAgent`; see `ordeal_tests/test_openrouter_agent.py` and `ordeal_tests/test_enterprise_experiment.py` for the full suites behind the screenshots above, including three prompt-injection scenarios (a tool result embeds a fake "SYSTEM" instruction trying to get the agent to bypass a denial or skip a validation step) and a multi-model comparison via `ordeal-behavior experiment`.
-
-`LLMAgent` also works as an `ordeal-behavior experiment` variant to rank models by pass rate, cost, and latency on the same suite:
+`StateEquals` and `ToolCalled` together catch a failure mode plain output-matching misses entirely: a model that says "I've refunded your order" without ever calling `refund_order`. That exact case, caught against a live model rather than a mock, is what motivated `LLMAgent`. See `ordeal_tests/test_openrouter_agent.py` and `ordeal_tests/test_enterprise_experiment.py` for the full suites behind the screenshots below, including three prompt-injection scenarios — a tool result embeds a fake "SYSTEM" instruction trying to get the agent to bypass a denial or skip a validation step — and a multi-model comparison via `ordeal-behavior experiment`:
 
 ```python
 from ordeal_agent import Variant
@@ -110,7 +121,16 @@ variants = [Variant(m, LLMAgent(world=world, model=m, base_url="...", api_key_en
 ordeal-behavior experiment ordeal_tests/test_enterprise_experiment.py --json report.json
 ```
 
-## Capture production behavior
+## Screenshots
+
+The web console after running that comparison across four models via OpenRouter:
+
+| | |
+|---|---|
+| ![27/27 scenarios passing for openai/gpt-oss-120b, $0.0025 total cost](docs/screenshots/experiment-passing.jpg) | ![40.7% pass rate for google/gemini-2.5-flash-lite, with several ERROR verdicts](docs/screenshots/experiment-failing.jpg) |
+| `openai/gpt-oss-120b` — 27/27 runs pass across payments, IT access, inventory, and a research/publish chain, including three adversarial prompt-injection cases. | `google/gemini-2.5-flash-lite` on the identical suite: 40.7% pass. The `ERROR` rows are a reproducible provider-side `MALFORMED_FUNCTION_CALL` failure on specific tool schemas — `LLMAgent` retries automatically, then reports the verdict honestly instead of hanging or fabricating a pass. |
+
+## Capturing production behavior
 
 ```python
 import os
@@ -138,7 +158,7 @@ ordeal-server otlp-grpc --address 127.0.0.1:4317
 
 Production gRPC requires certificates; see [deployment](docs/enterprise/DEPLOYMENT.md). OTLP snapshots cannot establish whole-execution completeness.
 
-## Run a private worker
+## Running a private worker
 
 Set `ORDEAL_API_KEY` to a scoped runner credential and `ORDEAL_PROJECT_ID` to its project. In a second terminal:
 
@@ -159,7 +179,7 @@ ordeal-server worker
 ordeal-server scheduler
 ```
 
-## Close the production-to-regression loop
+## Closing the production-to-regression loop
 
 Create a dataset in the console, open a captured trace, and choose **Add to dataset**. After reviewing captured inputs and outputs, load its immutable version:
 
@@ -185,7 +205,7 @@ The server provides scoped credentials, tenant/project authorization, browser se
 
 [TypeScript SDK](sdks/typescript/README.md) · [API/workflows](docs/enterprise/API.md) · [framework guide](docs/enterprise/INTEGRATIONS.md) · [deployment](docs/enterprise/DEPLOYMENT.md) · [security](docs/enterprise/SECURITY.md) · [operations](docs/enterprise/OPERATIONS.md)
 
-## Known gaps (read before relying on this for anything real)
+## Known limitations
 
 Verified hands-on while building the example suites above:
 
@@ -196,7 +216,7 @@ Verified hands-on while building the example suites above:
 
 The full, itemized 56-feature status is in [`docs/enterprise/CAPABILITY_MATRIX.md`](docs/enterprise/CAPABILITY_MATRIX.md).
 
-## Test the release
+## Testing the release
 
 ```bash
 python -m pip install -e '.[server,otel,platform-test,browser]'
@@ -210,3 +230,7 @@ In restricted environments where managed Chromium blocks all navigation, the bro
 ## Before selling a hosted service
 
 Use the [commercial launch checklist](docs/enterprise/COMMERCIAL_READINESS.md). No SOC 2/ISO report, external penetration-test conclusion, staffed support, payment collection, or uptime guarantee is included. PostgreSQL HA/load/failover, live IdP/provider compatibility, cloud object storage, Docker/Kubernetes, native browser networking, and large-scale retention need validation in the target deployment. The default small-install SQLite profile is not a demonstrated enterprise-scale SaaS architecture.
+
+## License
+
+Apache License 2.0 — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
