@@ -45,4 +45,4 @@ typer==0.26.3
 typing-extensions==4.16.0
 typing-inspection==0.4.2
 urllib3==2.7.0
-uvicorn==0.48.0
+uvicorn==0.52.4
