@@ -1,5 +1,0 @@
-{
-  "name": "enterprise-safety-regression",
-  "scenarios": ["deployment-timeout-before-execution", "revoked-deployment-token"],
-  "metadata": {"example": true, "owner": "platform-safety"}
-}

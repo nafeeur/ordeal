@@ -1,0 +1,61 @@
+# Local deployment template, not a validated HA installation.
+name: ordeal
+x-app: &app
+  image: ordeal-local:0.3.0
+  build:
+    context: ..
+  restart: unless-stopped
+  user: "65532:65532"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs: [/tmp:rw,noexec,nosuid,size=67108864]
+  environment:
+    ORDEAL_DATA_DIR: /var/lib/ordeal
+    ORDEAL_MASTER_KEY_FILE: /run/secrets/master_key
+    ORDEAL_DATABASE_URL_FILE: /run/secrets/database_url
+    ORDEAL_PUBLIC_URL: http://127.0.0.1:8080
+  secrets: [master_key, database_url]
+  volumes: [artifacts:/var/lib/ordeal]
+  depends_on:
+    database:
+      condition: service_healthy
+services:
+  database:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ordeal
+      POSTGRES_USER: ordeal
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_password
+    secrets: [database_password]
+    volumes: [postgres:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U ordeal -d ordeal"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  api:
+    <<: *app
+    ports: ["127.0.0.1:8080:8080"]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/readyz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  evaluator:
+    <<: *app
+    command: [ordeal-server, worker]
+  scheduler:
+    <<: *app
+    command: [ordeal-server, scheduler]
+secrets:
+  master_key:
+    file: ../.secrets/master_key
+  database_password:
+    file: ../.secrets/database_password
+  database_url:
+    file: ../.secrets/database_url
+volumes:
+  artifacts:
+  postgres:

@@ -1,327 +1,212 @@
-<p align="center">
-  <strong>ORDEAL</strong><br/>
-  <em>Verify what autonomous software actually does.</em>
-</p>
+# Ordeal 0.3.0 — standalone agent behavior platform
 
-<p align="center">
-  <a href="https://github.com/nafeeur/ordeal/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/nafeeur/ordeal/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Python" src="https://img.shields.io/badge/Python-3.11%2B-11110f">
-  <img alt="Status" src="https://img.shields.io/badge/status-experimental-11110f">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-11110f">
-</p>
+**Test what an agent does, observe what it did, and turn failures into lasting regression tests.**
 
-**Ordeal is a model- and infrastructure-agnostic runtime verification layer for autonomous software.**
+Ordeal combines an Apache-2.0 local Python simulator with a self-hosted team server, web console, authenticated telemetry ingestion, versioned datasets, evaluators, and private runners. It does not depend on a hosted account, Kafka, or a proprietary service. The TypeScript client is also included.
 
-Instead of trusting an autonomous system's explanation of what it did, Ordeal evaluates an observed sequence of reads, transformations, writes, and service calls against deterministic policies. The result is `PASS`, `FAIL`, or `INCOMPLETE`, accompanied by concrete evidence and a replayable input bundle.
+This is an implementation release for evaluation and controlled pilots, **not a certification or a claim that every enterprise deployment has been validated**. The [56-feature status matrix](docs/enterprise/CAPABILITY_MATRIX.md) separates working code, deployment templates, unvalidated external integrations, and organizational requirements. Read the [test report](docs/TESTING.md) before treating a feature as production-qualified.
 
-> **Autonomy chooses behavior. Ordeal verifies consequences.**
+> **A note on this repository.** This branch replaces a previous, unrelated implementation of "Ordeal" (a FastAPI + terminal-UI runtime verifier) that lived on `main` before 2026-09-14. That project is preserved, unmodified, on the [`archive/pre-standalone-2026-09-14`](../../tree/archive/pre-standalone-2026-09-14) branch. Nothing from it was deleted — this is a deliberate replacement of what `main` points to, not a merge of the two.
 
-Ordeal is not production-ready and must not be used as a security boundary or connected to live, irreversible systems.
+## What's here
 
-## Why this exists
+- A local Python simulator: stateful `World`s, tool-calling `Scenario`s, deterministic assertions (`ToolCalled`, `ToolOrder`, `StateEquals`, ...), fault injection, flakiness detection, and baseline regression comparison.
+- A self-hosted team server + web console for capturing production traces, versioning them into replayable datasets, running experiments, and queuing private runners.
+- **`LLMAgent`** (new): a built-in agent that drives a real model — OpenAI, OpenRouter, or any OpenAI-compatible endpoint — through a `World`'s own tools, with automatic schema generation, rate limiting, retry, and usage/cost tracking. See [below](#llmagent-real-models-against-simulated-worlds).
 
-Traditional backends encode behavior primarily in fixed code paths. In autonomous software, behavior can instead emerge from:
+## Screenshots
 
-```text
-planner or model + context + tools + live state + policy
-```
+The web console after running a real-model evaluation suite (`ordeal-behavior experiment`, four models compared via OpenRouter):
 
-An agent, workflow engine, model, or other autonomous controller may decide which databases to read, how to transform records, where to write them, and which services to invoke. Reviewing only its final answer or final state is insufficient: the outcome may look correct even when the system accessed forbidden data, skipped authorization, fabricated provenance, or repeated an irreversible action.
+![Experiment detail: 27/27 scenarios passing for openai/gpt-oss-120b, $0.0025 total cost](docs/screenshots/experiment-passing.jpg)
+*`openai/gpt-oss-120b` — 27/27 scenario runs pass across payments, IT access, inventory, and a research/publish chain, including three adversarial prompt-injection cases.*
 
-Ordeal treats the execution trajectory as the program under test.
+![Experiment detail: 40.7% pass rate for google/gemini-2.5-flash-lite, with several ERROR verdicts](docs/screenshots/experiment-failing.jpg)
+*`google/gemini-2.5-flash-lite` — the same suite drops to 40.7% pass. The `ERROR` rows are a real, reproducible `MALFORMED_FUNCTION_CALL` failure from the provider on specific tool schemas, not a harness bug — `LLMAgent` retries automatically and reports the verdict honestly instead of hanging or fabricating a pass.*
 
-## What works today
+## Start locally
 
-Ordeal currently has two complementary verification paths.
-
-| Path | Purpose | Status |
-| --- | --- | --- |
-| **Runtime verifier** | Evaluate any caller-supplied autonomous execution trace against deterministic policies | Experimental |
-| **Adversarial simulator** | Exercise agents in stateful test worlds with controlled faults and deterministic constraints | Experimental |
-
-### Runtime verifier
-
-`POST /api/runtime/verify` accepts an execution contract, initial and final state, and a sequence of observed boundary events. It does not invoke the target system.
-
-Supported event kinds:
-
-```text
-read  write  delete  call  transform  visualize  decision
-```
-
-Supported policies:
-
-| Policy | Verifies |
-| --- | --- |
-| `deny` | A forbidden action did not occur |
-| `require_before` | A required check happened before a sensitive action |
-| `data_boundary` | Classified data only reached approved services |
-| `max_occurrences` | An action stayed within an idempotency or frequency limit |
-| `require_dependency` | A write or output declares a causal path to a trusted source |
-| `transformation` | Declared copy, concatenation, and constant mappings are exact |
-| `state_assertion` | The supplied final state satisfies a deterministic invariant |
-
-The verifier normalizes events, validates ordering and dependency references, computes a content hash chain, evaluates the contract, and returns policy results, counterevidence, state hashes, a stable fingerprint, and a replay bundle.
-
-## Agnostic by contract
-
-Ordeal's stable core is deliberately smaller than any one agent framework or deployment stack:
-
-| Boundary | Canonical contract | Replaceable implementations |
-| --- | --- | --- |
-| **Target** | emits or accepts `ActionEnvelope` values | mock target, HTTP service, OpenAI-compatible endpoint, recorded trace |
-| **State** | snapshot, restore, hash, exact mutation | built-in memory ledger today; databases and filesystems can implement the same protocol |
-| **Runtime** | execute, schedule, seed, replay | local asyncio and experimental Kafka workers |
-| **Faults** | apply a named fault at an explicit phase | seeded pre-execution and post-commit simulation |
-| **Verifier** | contract + evidence → scoped verdict | built-in deterministic policy engine |
-
-Every observed action is normalized to `ordeal.action/v1`; contracts use `ordeal.contract/v1`. Adapter-specific fields remain attached as evidence, so normalization does not erase useful runtime detail.
-
-Adapters declare capabilities instead of relying on vendor names. Before a run, Ordeal can check whether an adapter satisfies the required boundary and refuse incompatible configurations:
+Use Python 3.10+ in a virtual environment. This source tree and its wheel are the installation targets; this release has **not** been published to PyPI or npm.
 
 ```bash
-python ordeal_cli.py adapters
-python ordeal_cli.py adapters --kind runtime
-python ordeal_cli.py check-adapter state memory --require snapshot --require restore
-```
-
-The same discovery and conformance checks are available through `GET /api/adapters`, `POST /api/adapters/conformance`, and `GET /api/runtime/capabilities`. Registration describes functionality that exists in this repository; Docker or Kubernetes packaging is not presented as a runtime adapter until it implements the runtime contract.
-
-A verification contract can make capabilities mandatory:
-
-```json
-{
-  "requires": {"state": ["snapshot", "restore"], "fault": ["after_commit"]},
-  "adapters": {"state": "memory", "fault": "simulated"},
-  "policies": []
-}
-```
-
-Missing adapters or capabilities yield `INCOMPLETE`; Ordeal does not silently claim a weaker verification boundary.
-
-### Adversarial simulator
-
-The simulator provides:
-
-- stateful worlds with a canonical mutation ledger;
-- deterministic assertions and reusable constraints;
-- simulated, HTTP passthrough, and OpenAI-compatible agent adapters;
-- seeded pre-execution faults and post-commit response loss;
-- repeated-run stability and baseline comparison;
-- replay, failure shrinking, JUnit export, and incident-to-regression conversion;
-- experimental Kafka-backed distributed execution.
-
-The simulator is a test laboratory, not a faithful replica of arbitrary production services. Simulator profiles, distributed execution, and deployment scaffolding remain experimental.
-
-## Terminal interface
-
-![Ordeal terminal interface](docs/images/ordeal-tui.svg)
-
-Ordeal is terminal-native. The Textual TUI includes:
-
-- an overview of runs, workers, constraints, and the current gate;
-- campaign creation and run history;
-- behavioral timelines and counterevidence inspection;
-- replay and failure-shrinking actions;
-- a Runtime view for loading and verifying any canonical JSON execution bundle;
-- compact terminal layouts, keyboard navigation, and a command palette.
-
-```text
-1–5  switch view     r  refresh     :  command palette
-R    replay          S  shrink      ?  help      q  quit
-```
-
-Set `ORDEAL_ASCII=1` to replace Unicode symbols. Set `ORDEAL_FROZEN_UI=1` or `NO_MOTION=1` to disable interface motion.
-
-## Quick start
-
-Requirements: Python 3.11 or newer.
-
-```bash
-git clone https://github.com/nafeeur/ordeal.git
-cd ordeal
-
 python -m venv .venv
 source .venv/bin/activate
-pip install -r backend/requirements.txt
+python -m pip install -e '.[server,otel]'
+ordeal-server init --name 'My organization'
+ordeal-server serve
 ```
 
-Start the API:
+Open `http://127.0.0.1:8080`. Sign in using the token printed once by `init`. Save the project ID for SDK/runner use. Initialization creates a private `.ordeal` directory, a restricted `.ordeal/master.key`, and an SQLite database. Preserve that key separately from encrypted backups. Re-running initialization does not erase existing data or reprint old tokens.
+
+For **local behavior testing only**, install `python -m pip install -e .`. Server dependencies are optional.
 
 ```bash
-make api
+ordeal-behavior init
+ordeal-behavior run ordeal_tests/test_agent.py
+ordeal-behavior run examples/enterprise/suite.py --json report.json --junit report.xml
+ordeal-server gate report.json --summary summary.md
 ```
 
-In another terminal, open the TUI:
+The enterprise fixture suite covers authorized/denied payments, authorization timeouts, IT access, stock reservation, retry, and a research-review-publication chain. These are simulated applications, not live financial or identity systems.
+
+## LLMAgent: real models against simulated Worlds
+
+Every other agent adapter in this package (`CallableAgent`, `HTTPAgent`, `CommandAgent`) expects you to already have an agent to wrap. `LLMAgent` *is* one: point it at a model and a `World`, and it runs the full OpenAI-compatible tool-calling loop itself — deriving the function-calling schema from the `World`'s own tools (via `tool_manifest`), rate-limiting and retrying requests through the built-in `ProviderLimiter`, recovering from a provider returning a malformed or empty tool call, and rolling prompt/completion tokens and cost into the scenario report automatically.
+
+```python
+from ordeal_agent import LLMAgent, Scenario, StateEquals, Suite, ToolCalled, ToolOrder, World, simulated
+
+def lookup_order(args, ctx):
+    return ctx.world.get("orders", {}).get(args["order_id"], {"status": "not_found"})
+
+def refund_order(args, ctx):
+    orders = ctx.world.get("orders", {})
+    order = orders.get(args["order_id"])
+    if order is None or order["status"] != "paid":
+        return {"ok": False}
+    ctx.world.set("orders", {**orders, args["order_id"]: {**order, "status": "refunded"}})
+    return {"ok": True}
+
+world = World(
+    "support",
+    initial_state={"orders": {"A-100": {"status": "paid", "amount": 42}}},
+    tools=[
+        simulated("lookup_order", lookup_order, description="Look up an order",
+                   input_schema={"type": "object", "properties": {"order_id": {"type": "string"}}, "required": ["order_id"]}),
+        simulated("refund_order", refund_order, description="Refund an eligible order",
+                   input_schema={"type": "object", "properties": {"order_id": {"type": "string"}}, "required": ["order_id"]}),
+    ],
+)
+
+agent = LLMAgent(
+    world=world,
+    model="google/gemini-2.5-flash-lite",       # any OpenAI-compatible model id
+    base_url="https://openrouter.ai/api/v1",     # OpenAI, OpenRouter, vLLM, Ollama, ...
+    api_key_env="OPENROUTER_API_KEY",
+    extra_body={"usage": {"include": True}},     # provider-specific request fields
+)
+
+suite = Suite.of("refund", Scenario(
+    "refund-paid-order",
+    "A customer wants a refund on order A-100. Look it up and refund it if eligible.",
+    world,
+    assertions=[ToolCalled("lookup_order"), ToolCalled("refund_order"),
+                ToolOrder("lookup_order", "refund_order"),
+                StateEquals("orders", {"A-100": {"status": "refunded", "amount": 42}})],
+))
+```
+
+`StateEquals` and `ToolCalled` together catch a real failure mode plain output-matching misses entirely: a model that *says* "I've refunded your order" without ever calling `refund_order`. That exact case — caught against a live model, not a mock — is what motivated adding `LLMAgent`; see `ordeal_tests/test_openrouter_agent.py` and `ordeal_tests/test_enterprise_experiment.py` for the full suites behind the screenshots above, including three prompt-injection scenarios (a tool result embeds a fake "SYSTEM" instruction trying to get the agent to bypass a denial or skip a validation step) and a multi-model comparison via `ordeal-behavior experiment`.
+
+`LLMAgent` also works as an `ordeal-behavior experiment` variant to rank models by pass rate, cost, and latency on the same suite:
+
+```python
+from ordeal_agent import Variant
+
+variants = [Variant(m, LLMAgent(world=world, model=m, base_url="...", api_key_env="...")) for m in MODELS]
+```
 
 ```bash
-make tui
+ordeal-behavior experiment ordeal_tests/test_enterprise_experiment.py --json report.json
 ```
 
-The API is available at `http://localhost:8000`; interactive API documentation is available at `/docs` in development mode.
+## Capture production behavior
 
-### Verify an observed autonomous runtime trace
+```python
+import os
+from ordeal_agent import PlatformClient
 
-With the API running:
+with PlatformClient(
+    "http://127.0.0.1:8080",
+    os.environ["ORDEAL_API_KEY"],
+    os.environ["ORDEAL_PROJECT_ID"],
+) as client:
+    with client.trace("support-agent") as trace:
+        with trace.span("lookup_order", arguments={"order_id": "A100"}) as span:
+            order = {"paid": True}  # Replace with your application's call.
+            span.set_output(order)
+        trace.set_output("Order found")
+```
+
+The default production status is **unscored**, not PASS. Missing token/cost measurements remain unknown. Export failures are fail-open by default and available as `trace.last_error`; use `fail_open=False` when export failure should raise. Client-side and server-side redaction are configurable and are not universal PII detection.
+
+Existing OpenTelemetry/OpenInference instrumentation can send OTLP/HTTP JSON or protobuf to `/v1/traces`, with `Authorization: Bearer …` and `X-Ordeal-Project: …`. A separate authenticated gRPC listener is available:
 
 ```bash
-python ordeal_cli.py verify-runtime \
-  examples/model-native-runtime/verified.json \
-  --fail-on-verdict
+ordeal-server otlp-grpc --address 127.0.0.1:4317
 ```
 
-The included example represents an autonomous workflow that:
+Production gRPC requires certificates; see [deployment](docs/enterprise/DEPLOYMENT.md). OTLP snapshots cannot establish whole-execution completeness.
 
-1. reads a customer from Salesforce;
-2. checks a legal-hold service;
-3. transforms the customer record;
-4. writes the result to a campaign system; and
-5. invokes a messaging service.
+## Run a private worker
 
-Its contract verifies check ordering, data boundaries, declared provenance, field mappings, duplicate contact attempts, and final state.
-
-Run the deliberately unsafe trace to see counterevidence:
+Set `ORDEAL_API_KEY` to a scoped runner credential and `ORDEAL_PROJECT_ID` to its project. In a second terminal:
 
 ```bash
-python ordeal_cli.py verify-runtime \
-  examples/model-native-runtime/violated.json \
-  --fail-on-verdict
+ordeal-server runner --workspace . \
+  --allow-suite examples/enterprise/suite.py \
+  --mode trusted-process --label private
 ```
 
-The unsafe example skips the legal-hold check and contacts the same customer twice. With `--fail-on-verdict`, the command exits with status `2`.
+Queue that suite from **Jobs** in the console. The runner executes a real child process, heartbeats its lease, uploads the report, and stops when cancellation or lease loss is observed. A succeeded job means execution finished; its tests may still have failed.
 
-### Run the simulator demo
+`trusted-process` is **not a sandbox**. Use only operator-owned code. The Docker backend requires a digest-pinned image and applies resource, filesystem, capability, and network restrictions; it is supplied but was not run against a Docker daemon in this build environment. Do not give the API a Docker socket. Production model calls in private runners require an explicitly designed customer network policy; the supplied Docker mode has no network.
 
-Seed the built-in mock agent, world, scenarios, and constraint:
+Server-side online evaluators and delivery/maintenance run independently:
 
 ```bash
-python ordeal_cli.py seed-demo
+ordeal-server worker
+ordeal-server scheduler
 ```
 
-Run the deterministic campaign:
+## Close the production-to-regression loop
+
+Create a dataset in the console, open a captured trace, and choose **Add to dataset**. After reviewing captured inputs and outputs, load its immutable version:
+
+```python
+from ordeal_agent import ToolCalled, ToolOrder, Runner
+
+suite = client.replay_dataset(
+    dataset_id,
+    version=2,
+    assertions=[ToolCalled("refund"), ToolOrder("authorize", "refund")],
+)
+report = Runner().run_suite_sync(your_agent, suite)
+client.upload_report(report)
+```
+
+Cassettes replay observed tool returns; they do not recreate arbitrary external state or model randomness. Cases containing redacted or missing inputs/outputs are blocked until repaired explicitly. Your assertions are the oracle, not the fact that a production run happened.
+
+## Capabilities
+
+The console includes trace/trajectory inspection, datasets and histories, agent/prompt/world/scenario registries, environment aliases, experiments, evaluation, human review, jobs, runners, monitors, alerts, integrations, access settings, usage statements, and signed audit checkpoints.
+
+The server provides scoped credentials, tenant/project authorization, browser sessions, OIDC sign-in, a SCIM Users/Groups subset, encrypted secrets/artifacts, immutable versions, bounded ingestion, a durable job queue, online evaluator sampling, encrypted local backup/restore, retention/legal holds, quotas, and durable signed webhooks. Code, custom Python, HTTP, embedding, LLM-judge, and human evaluation paths are separate.
+
+[TypeScript SDK](sdks/typescript/README.md) · [API/workflows](docs/enterprise/API.md) · [framework guide](docs/enterprise/INTEGRATIONS.md) · [deployment](docs/enterprise/DEPLOYMENT.md) · [security](docs/enterprise/SECURITY.md) · [operations](docs/enterprise/OPERATIONS.md)
+
+## Known gaps (read before relying on this for anything real)
+
+Verified hands-on while building the example suites above:
+
+- **Only one live-model integration path (`LLMAgent`) has actually been run against a real provider.** The other ten framework adapters (LangChain, CrewAI, AutoGen, LlamaIndex, Strands, Google ADK, OpenAI Agents SDK, pydantic-ai, smolagents, MCP) are type-shaped only — the release explicitly skips the native framework contract matrix.
+- **Docker runner backend is untested against a live Docker daemon.** `trusted-process` mode is not a sandbox.
+- **Browser/console tests run through a test-only bridge**, not native Chromium navigation — see [`docs/TESTING.md`](docs/TESTING.md).
+- **No independent penetration test, SOC 2/ISO process, or enterprise-scale (Postgres/S3/HA) validation.** See the [commercial launch checklist](docs/enterprise/COMMERCIAL_READINESS.md) before selling this as a hosted service.
+
+The full, itemized 56-feature status is in [`docs/enterprise/CAPABILITY_MATRIX.md`](docs/enterprise/CAPABILITY_MATRIX.md).
+
+## Test the release
 
 ```bash
-python ordeal_cli.py run \
-  --agent refund-agent \
-  --suite refund-regression \
-  --seed 41 \
-  --repetitions 3 \
-  --fail-on-verdict
+python -m pip install -e '.[server,otel,platform-test,browser]'
+python -m playwright install chromium
+npm install --prefix sdks/typescript
+python scripts/verify_release.py
 ```
 
-## Runtime input model
+In restricted environments where managed Chromium blocks all navigation, the browser suite has an explicit `ORDEAL_BROWSER_TRANSPORT=bridge` mode: the real UI runs in Chromium while a test-only bridge performs real loopback HTTP/cookie handling. That is **not** native browser-network/CSP validation. Normal CI runs without that override.
 
-A runtime verification request has four principal parts:
+## Before selling a hosted service
 
-```json
-{
-  "execution": "example-run",
-  "contract": {
-    "name": "example-contract",
-    "policies": []
-  },
-  "initial_state": {},
-  "final_state": {},
-  "events": []
-}
-```
-
-Events may declare `depends_on` relationships to earlier event IDs. These relationships are assertions supplied by the trace producer; Ordeal checks their structure and evaluates provenance policies over them, but it does not independently discover causality.
-
-See [`examples/model-native-runtime/verified.json`](examples/model-native-runtime/verified.json) for a complete contract and trace. The example directory retains its original name for compatibility.
-
-## Verdicts
-
-| Verdict | Meaning |
-| --- | --- |
-| `PASS` | Every supported policy passed for the supplied observations |
-| `FAIL` | A policy failed or the trace had an integrity/ordering problem |
-| `INCOMPLETE` | The contract was empty, malformed, or requested unsupported semantics |
-
-A pass is limited to the declared contract and supplied evidence. It is not proof that unobserved behavior was safe.
-
-## Current limitations
-
-- Ordeal accepts canonical traces but does not yet provide production trace collectors for every framework or infrastructure provider.
-- The adapter protocols and capability registry are stable boundaries; most third-party state and runtime adapters still need implementations.
-- Runtime verification results are returned to the caller but are not stored as first-class database records.
-- Dependency edges are declared by the trace producer; they are structurally checked, not independently inferred.
-- The event hash chain is content-addressed, not signed. It only detects mismatch when the expected chain head comes from a trusted source.
-- The policy selector and transformation languages intentionally support a small deterministic subset.
-- The runtime verifier does not currently inject faults; fault injection belongs to the simulator path.
-- Active simulator trials are process-local, and local/distributed execution does not yet have full semantic parity.
-- Replay cannot make external model calls or live dependencies deterministic.
-- No multi-tenant isolation, production retention model, penetration testing, or reliability certification has been completed.
-
-See [`PRODUCTION_READINESS.md`](PRODUCTION_READINESS.md) for the full readiness assessment.
-
-## Architecture
-
-```text
-model runtime
-      │
-      ▼
-instrumented capability boundary
-      │
-      ▼
-caller-supplied canonical events
-      │
-      ├── ordering and integrity checks
-      ├── policy evaluation
-      ├── dependency/provenance traversal
-      └── state and transformation checks
-      │
-      ▼
-PASS / FAIL / INCOMPLETE
-      │
-      ▼
-counterevidence + fingerprint + replay bundle
-```
-
-The FastAPI service hosts both the runtime verifier and the simulator control plane. PostgreSQL is supported for control-plane records. Kafka workers, Kubernetes manifests, and production-shaped Compose files are experimental infrastructure paths rather than production claims.
-
-See [`ARCHITECTURE.md`](ARCHITECTURE.md) for implementation details.
-
-## Configuration
-
-The CLI defaults to `http://localhost:8000`. Configure a different service with:
-
-```bash
-export ORDEAL_API_URL=http://your-ordeal-host:8000
-export ORDEAL_API_KEY=your-key
-```
-
-Authentication is disabled by default for local development. Review [`.env.example`](.env.example) and [`SECURITY.md`](SECURITY.md) before changing that setting or exposing the API.
-
-## Testing
-
-```bash
-PYTHONPATH=backend:. pytest -q
-```
-
-CI runs the backend suite, compiles the CLI and TUI, checks CLI startup, and runs the terminal-interface tests.
-
-## Repository layout
-
-```text
-backend/app/                         API, simulator, policies, runtime verifier
-backend/tests/                       engine, enterprise, and runtime tests
-examples/model-native-runtime/      passing and failing runtime traces
-examples/enterprise-suite/          HTTP-agent simulator example
-ordeal_cli.py                        automation-friendly CLI
-ordeal_tui.py                        Textual terminal interface
-deploy/k8s/                          experimental Kubernetes manifest
-ARCHITECTURE.md                      system architecture
-PRODUCTION_READINESS.md              limitations and readiness status
-SECURITY.md                          security guidance
-```
-
-## Contributing
-
-Contributions are welcome. Useful areas include trusted trace collection, policy primitives, connector adapters, provenance validation, regression persistence, simulator fidelity, replay, failure shrinking, and terminal accessibility.
-
-Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request.
-
-## License
-
-MIT. See [`LICENSE`](LICENSE).
+Use the [commercial launch checklist](docs/enterprise/COMMERCIAL_READINESS.md). No SOC 2/ISO report, external penetration-test conclusion, staffed support, payment collection, or uptime guarantee is included. PostgreSQL HA/load/failover, live IdP/provider compatibility, cloud object storage, Docker/Kubernetes, native browser networking, and large-scale retention need validation in the target deployment. The default small-install SQLite profile is not a demonstrated enterprise-scale SaaS architecture.

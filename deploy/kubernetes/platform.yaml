@@ -1,0 +1,111 @@
+# Review and substitute the image, host, storage class, and external DB secrets.
+# Templates only: no cluster execution or availability qualification was performed.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ordeal
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: ordeal, namespace: ordeal}
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: ordeal-config, namespace: ordeal}
+data:
+  ORDEAL_PRODUCTION: "1"
+  ORDEAL_PUBLIC_URL: "https://ordeal.example.com"
+  ORDEAL_DATA_DIR: "/var/lib/ordeal"
+  ORDEAL_MASTER_KEY_FILE: "/run/secrets/ORDEAL_MASTER_KEY"
+  ORDEAL_DATABASE_URL_FILE: "/run/secrets/ORDEAL_DATABASE_URL"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: ordeal-artifacts, namespace: ordeal}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests: {storage: 20Gi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ordeal-api, namespace: ordeal}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: ordeal-api}
+  template:
+    metadata:
+      labels: {app: ordeal-api}
+    spec:
+      serviceAccountName: ordeal
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: api
+          image: ordeal:0.3.0
+          # Replace with a digest-pinned image from your own registry.
+          envFrom: [{configMapRef: {name: ordeal-config}}]
+          ports: [{containerPort: 8080}]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 250m, memory: 256Mi}
+            limits: {cpu: "2", memory: 1Gi}
+          readinessProbe:
+            httpGet: {path: /readyz, port: 8080}
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthz, port: 8080}
+            initialDelaySeconds: 15
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/ordeal}
+            - {name: tmp, mountPath: /tmp}
+            - {name: secrets, mountPath: /run/secrets, readOnly: true}
+      volumes:
+        - {name: data, persistentVolumeClaim: {claimName: ordeal-artifacts}}
+        - {name: tmp, emptyDir: {sizeLimit: 64Mi}}
+        - name: secrets
+          secret: {secretName: ordeal-secrets, defaultMode: 0440}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: ordeal-api, namespace: ordeal}
+spec:
+  selector: {app: ordeal-api}
+  ports: [{port: 8080, targetPort: 8080}]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: {name: ordeal-api, namespace: ordeal}
+spec:
+  tls:
+    - hosts: [ordeal.example.com]
+      secretName: ordeal-tls
+  rules:
+    - host: ordeal.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: ordeal-api, port: {number: 8080}}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: ordeal}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+# Add explicit ingress-controller, DNS, DB, IdP and approved outbound allowances.
+# This deny-first template intentionally cannot communicate until configured.

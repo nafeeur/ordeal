@@ -1,0 +1,26 @@
+{
+  "version": "0.3.0",
+  "python": "3.13.5",
+  "phases": [
+    "installed CLI init and idempotent migration",
+    "packaged API, static console and trust page",
+    "production trace -> versioned dataset -> replay -> failing regression CLI exit",
+    "independent runner CLI -> real agent child process -> nine passing cases",
+    "100 unique ingestions with eight concurrent clients",
+    "API process restart preserves traces and jobs",
+    "encrypted backup CLI -> empty-directory restore -> restarted API and artifact recovery",
+    "installed local SDK scaffold runs without server dependency"
+  ],
+  "bounded_load_smoke": {
+    "requests": 100,
+    "concurrency": 8,
+    "errors": 0,
+    "seconds": 0.439,
+    "requests_per_second": 227.69,
+    "median_ms": 8.55,
+    "p95_ms": 108.59,
+    "qualification": "Loopback HTTP, SQLite, synthetic minimal traces. Not a scale, latency-SLO or sustained-load claim."
+  },
+  "elapsed_seconds": 19.391,
+  "passed": true
+}

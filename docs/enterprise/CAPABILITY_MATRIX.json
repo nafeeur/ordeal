@@ -1,0 +1,450 @@
+[
+  {
+    "number": 1,
+    "feature": "Production tracing",
+    "status": "Implemented",
+    "implementation": "Python/TypeScript telemetry; nested spans, tool arguments/results, usage, errors, redaction; production trace to replay dataset.",
+    "evidence": "telemetry.py; test_real_clients.py; test_hardening.py",
+    "limit": "Instrumentation is opt-in; capture is not independent attestation of all actions."
+  },
+  {
+    "number": 2,
+    "feature": "OTLP and OpenInference",
+    "status": "Implemented",
+    "implementation": "OTLP HTTP JSON/protobuf and authenticated traces-only gRPC; incremental spans; OTLP export.",
+    "evidence": "otlp.py; test_otlp.py",
+    "limit": "No OTLP metrics/log ingestion. External collector deployments are not qualified; execution completeness stays unknown."
+  },
+  {
+    "number": 3,
+    "feature": "Web console",
+    "status": "Implemented",
+    "implementation": "Functional local console backed by the API; login, projects, resources, traces, jobs, reviews, usage and audit.",
+    "evidence": "static/; test_browser.py",
+    "limit": "Browser interaction tested through an explicit HTTP bridge here; native network/CSP E2E requires normal CI."
+  },
+  {
+    "number": 4,
+    "feature": "Trajectory visualization",
+    "status": "Implemented",
+    "implementation": "Trace timeline, tool sequence and SVG parent/child span graph, payload inspection and state.",
+    "evidence": "static/app.js; test_browser.py",
+    "limit": "This is not a large-graph rendering engine or formal causal graph; parentage comes from the producer."
+  },
+  {
+    "number": 5,
+    "feature": "Evaluation framework",
+    "status": "Implemented",
+    "implementation": "Deterministic, HTTP, OpenAI-compatible JSON LLM judge, embedding similarity, human review and allowlisted private Python.",
+    "evidence": "evaluators.py; operations.py; test_remote_and_identity.py",
+    "limit": "Real remote protocols tested against local fake providers; no paid model calls or universal model compatibility claim."
+  },
+  {
+    "number": 6,
+    "feature": "Evaluator calibration",
+    "status": "Implemented",
+    "implementation": "Binary confusion matrix, accuracy, precision, recall, disagreement and Cohen kappa.",
+    "evidence": "behavior.py; test_tracing_evaluation.py",
+    "limit": "Requires meaningful human labels; binary calibration is not arbitrary ordinal/multiclass adjudication."
+  },
+  {
+    "number": 7,
+    "feature": "Human review",
+    "status": "Implemented",
+    "implementation": "Queues, assignment, labels, comments, approval/rejection and audit trail.",
+    "evidence": "server.py; test_browser.py",
+    "limit": "No advanced inter-rater assignment scheduler or consensus adjudication UI."
+  },
+  {
+    "number": 8,
+    "feature": "Dataset versioning",
+    "status": "Implemented",
+    "implementation": "Immutable versions, schemas, hashes, optimistic concurrency, provenance, source trace conversion and explicit replay readiness.",
+    "evidence": "services.py; datasets.py; test_access_and_versions.py",
+    "limit": "Version history/aliases, not full Git-style branching/merge. Redacted cassettes require manual repair."
+  },
+  {
+    "number": 9,
+    "feature": "Experiment tracking",
+    "status": "Implemented",
+    "implementation": "Agent/prompt/model comparison, saved reports, case-level deltas, usage/latency and version references.",
+    "evidence": "experiments.py; behavior.py; test_advanced.py",
+    "limit": "Observed differences are descriptive, not automatic statistical significance or causal attribution."
+  },
+  {
+    "number": 10,
+    "feature": "Agent registry",
+    "status": "Implemented",
+    "implementation": "Versioned configurations and environment aliases with Git/model/tool metadata.",
+    "evidence": "services.py; test_access_and_versions.py",
+    "limit": "Registers metadata; it does not deploy arbitrary application binaries."
+  },
+  {
+    "number": 11,
+    "feature": "Prompt registry",
+    "status": "Implemented",
+    "implementation": "Immutable templates, aliases, automation triggers and pinned, restricted variable rendering.",
+    "evidence": "prompts.py; test_hardening.py; test_browser.py",
+    "limit": "No arbitrary template execution. Review/promotion permissions are not two-person approval workflows."
+  },
+  {
+    "number": 12,
+    "feature": "Behavioral signatures",
+    "status": "Implemented",
+    "implementation": "Structure/content fingerprints, tool frequencies, exact sequence signatures and descriptive drift comparison.",
+    "evidence": "behavior.py; models.py; test_tracing_evaluation.py",
+    "limit": "No claim that a signature proves behavioral equivalence."
+  },
+  {
+    "number": 13,
+    "feature": "Behavior clustering",
+    "status": "Partial",
+    "implementation": "Exact tool-sequence grouping and frequency summaries over bounded trace windows.",
+    "evidence": "behavior.py; test_tracing_evaluation.py",
+    "limit": "Semantic/embedding clustering, millions-of-traces analytics and trained novelty detection are not implemented."
+  },
+  {
+    "number": 14,
+    "feature": "Failure taxonomy",
+    "status": "Implemented",
+    "implementation": "Inspectable heuristic categorization of tool errors, timeouts, ordering failures and other observed failure signals.",
+    "evidence": "behavior.py; test_tracing_evaluation.py",
+    "limit": "Not a calibrated root-cause classifier; categories may overlap or lack evidence."
+  },
+  {
+    "number": 15,
+    "feature": "Monitoring and alerts",
+    "status": "Implemented",
+    "implementation": "Windowed monitors, sample minimums, threshold checks, alert acknowledgement and connector dispatch.",
+    "evidence": "operations.py; test_operations.py",
+    "limit": "Requires scheduler process. Large-window/high-throughput monitoring not load-qualified."
+  },
+  {
+    "number": 16,
+    "feature": "Online evaluation",
+    "status": "Implemented",
+    "implementation": "Pinned evaluator versions, deterministic sample selection, durable evaluation jobs and cached results.",
+    "evidence": "services.py; operations.py; test_jobs_and_runner.py",
+    "limit": "Budgeting is local accounting; it cannot enforce another provider account's global spend."
+  },
+  {
+    "number": 17,
+    "feature": "Secure execution",
+    "status": "Partial",
+    "implementation": "Private subprocess execution, bounded output, deadlines, cancellation, allowlists; digest-pinned restricted Docker command generation.",
+    "evidence": "runner.py; test_jobs_and_runner.py",
+    "limit": "Real child-process tests passed; Docker backend was NOT daemon-tested. Trusted-process is not a sandbox. No Firecracker/Kata backend."
+  },
+  {
+    "number": 18,
+    "feature": "Customer-hosted runners",
+    "status": "Implemented",
+    "implementation": "Outbound polling, scoped credentials, labels, leases, heartbeats, cancellation and report upload.",
+    "evidence": "runner.py; test_real_clients.py",
+    "limit": "POSIX runner required; multi-region fleets and unreliable real customer networks not qualified."
+  },
+  {
+    "number": 19,
+    "feature": "Secrets management",
+    "status": "Partial",
+    "implementation": "Project-scoped AES-GCM vault, name-based references, leased runner access, _FILE config and no secret values in Docker argv.",
+    "evidence": "security.py; server.py; test_operations.py",
+    "limit": "No native AWS/Vault/Azure/GCP secret rotation clients. Mount credentials from an external manager; key rotation requires a migration plan."
+  },
+  {
+    "number": 20,
+    "feature": "Organizations and projects",
+    "status": "Implemented",
+    "implementation": "Tenant/project ownership, environments as resource aliases/trace labels, scoped principals and projects.",
+    "evidence": "db.py; services.py; test_access_and_versions.py",
+    "limit": "No separate workspace hierarchy or enterprise directory tenancy federation."
+  },
+  {
+    "number": 21,
+    "feature": "Enterprise SSO",
+    "status": "Partial",
+    "implementation": "OIDC authorization code + PKCE, state/browser binding, nonce, signature/audience/issuer validation and provisioned-user policy.",
+    "evidence": "identity.py; test_remote_and_identity.py",
+    "limit": "Local signed IdP protocol tests only. Native SAML is not implemented; use an OIDC-capable identity broker. One OIDC configuration per server."
+  },
+  {
+    "number": 22,
+    "feature": "SCIM",
+    "status": "Partial",
+    "implementation": "Users/Groups subset, create/read/update/deactivate, filters, membership patches and operator-controlled role mapping.",
+    "evidence": "scim.py; test_remote_and_identity.py",
+    "limit": "Not a complete SCIM conformance implementation; qualify your IdP payloads. Bulk, sorting and schema extensions are not supported."
+  },
+  {
+    "number": 23,
+    "feature": "RBAC",
+    "status": "Implemented",
+    "implementation": "Owner/admin/developer/reviewer/viewer/billing/runner roles plus scoped permission subsets and server-side checks.",
+    "evidence": "security.py; test_access_and_versions.py",
+    "limit": "Permissions are deliberately compact; not an arbitrary policy engine, hierarchical custom-role editor or PostgreSQL RLS."
+  },
+  {
+    "number": 24,
+    "feature": "Service accounts",
+    "status": "Implemented",
+    "implementation": "Machine principals, hashed expiring tokens, scoped permissions, rotation-by-reissue and immediate revocation.",
+    "evidence": "security.py; test_access_and_versions.py",
+    "limit": "No workload identity federation or automatic external token broker."
+  },
+  {
+    "number": 25,
+    "feature": "Audit logging",
+    "status": "Implemented",
+    "implementation": "Tenant hash chains, actor/action/resource metadata, audit export and signed Ed25519 checkpoints.",
+    "evidence": "db.py; security.py; test_operations.py",
+    "limit": "An administrator with database and key access can rewrite local history; checkpoint externally. No independent timestamp authority."
+  },
+  {
+    "number": 26,
+    "feature": "Retention and legal hold",
+    "status": "Implemented",
+    "implementation": "Trace/artifact retention, hold-aware deletion, shared artifact reference handling and maintenance.",
+    "evidence": "operations.py; test_operations.py",
+    "limit": "No automated archive tier; database backups have their own retention and deletion obligations."
+  },
+  {
+    "number": 27,
+    "feature": "Redaction",
+    "status": "Implemented",
+    "implementation": "Recursive sensitive field suppression, common PII/secret patterns, configurable fields and input/output suppression.",
+    "evidence": "telemetry.py; services.py; test_tracing_evaluation.py",
+    "limit": "Pattern-based detection cannot guarantee removal of all PII or secrets. Test with your own data and suppress sensitive payloads."
+  },
+  {
+    "number": 28,
+    "feature": "Encryption and customer keys",
+    "status": "Partial",
+    "implementation": "AES-256-GCM secrets/artifacts and authenticated encrypted local backups; HTTPS production requirement and gRPC TLS support.",
+    "evidence": "security.py; storage.py; test_operations.py",
+    "limit": "Database trace/metadata encryption is operator-provided. No native CMEK/KMS envelope rotation integration."
+  },
+  {
+    "number": 29,
+    "feature": "Deployment options",
+    "status": "Partial",
+    "implementation": "Local SDK/server, customer runner, Docker/Compose and Kubernetes deployment templates.",
+    "evidence": "deploy/; docs/enterprise/DEPLOYMENT.md",
+    "limit": "No running Ordeal SaaS, managed VPC installation, HA certification or verified cloud deployment supplied."
+  },
+  {
+    "number": 30,
+    "feature": "Multi-tenancy",
+    "status": "Partial",
+    "implementation": "Tenant/project scoping across API, jobs, artifacts, secrets, cache, usage and audit; cross-tenant tests.",
+    "evidence": "security.py; db.py; test_access_and_versions.py",
+    "limit": "Application isolation only. No PostgreSQL RLS policies or independent enterprise isolation review; dedicated deployments recommended for pilots."
+  },
+  {
+    "number": 31,
+    "feature": "Storage architecture",
+    "status": "Partial",
+    "implementation": "SQL metadata, local encrypted object storage and an S3-compatible adapter.",
+    "evidence": "storage.py; db.py; test_operations.py",
+    "limit": "SQLite is tested. PostgreSQL/S3 paths are supplied but not live-service tested. No columnar analytics engine or millions-of-traces benchmark."
+  },
+  {
+    "number": 32,
+    "feature": "Scheduler and workers",
+    "status": "Implemented",
+    "implementation": "Durable priorities, labels, claim fencing, lease expiry/retry, cancellation, bounded work and worker control plane.",
+    "evidence": "services.py; runner.py; test_jobs_and_runner.py",
+    "limit": "At-least-once execution; external side effects require idempotency. No distributed checkpointing of arbitrary agent memory."
+  },
+  {
+    "number": 33,
+    "feature": "Cost governance",
+    "status": "Partial",
+    "implementation": "Project daily caps, job reservations, actual reported cost accounting and per-scenario budgets.",
+    "evidence": "services.py; runner.py; test_jobs_and_runner.py",
+    "limit": "Cannot prevent unknown/provider-side costs; estimates are reservations, not authoritative invoices. No org/model/monthly fleet caps."
+  },
+  {
+    "number": 34,
+    "feature": "Caching",
+    "status": "Implemented",
+    "implementation": "Tenant/project TTL cache and versioned trace/evaluator cache; explicit replay cassettes.",
+    "evidence": "operations.py; server.py; test_operations.py",
+    "limit": "No transparent universal cache for every model/retrieval call. Unknown stochastic dependencies must enter cache keys."
+  },
+  {
+    "number": 35,
+    "feature": "Provider rate limits",
+    "status": "Partial",
+    "implementation": "Opt-in async concurrency/QPS/token-reservation limiter, 429 backoff, Retry-After and explicit safe retries.",
+    "evidence": "provider_limits.py; test_hardening.py",
+    "limit": "Per-process, not account-wide distributed provider quota discovery. Non-idempotent calls do not retry by default."
+  },
+  {
+    "number": 36,
+    "feature": "CI/CD integrations",
+    "status": "Partial",
+    "implementation": "Tested JSON/JUnit/Markdown gate, GitHub workflow plus GitLab/Jenkins/CircleCI/Azure/Bitbucket templates; status connectors.",
+    "evidence": "ci.py; deploy/ci; test_real_clients.py",
+    "limit": "Hosted CI templates/provider accounts not executed here. Branch protection and secure fork handling are administrator responsibilities."
+  },
+  {
+    "number": 37,
+    "feature": "PR behavior diffs",
+    "status": "Implemented",
+    "implementation": "Baseline regression gates, removed-case detection, structure/content diffs and HTML/Markdown output.",
+    "evidence": "regression.py; behavior.py; ci.py",
+    "limit": "No automatically installed GitHub App. Configure protected baseline and status publishing explicitly."
+  },
+  {
+    "number": 38,
+    "feature": "Issue tracker integrations",
+    "status": "Partial",
+    "implementation": "Jira, Linear and GitHub issue connector payloads over bounded allowlisted HTTP.",
+    "evidence": "operations.py; test_remote_and_identity.py",
+    "limit": "Local protocol tests only; project permissions, field mappings and vendor account setup require validation."
+  },
+  {
+    "number": 39,
+    "feature": "Incident integrations",
+    "status": "Partial",
+    "implementation": "Slack, Teams, PagerDuty, ServiceNow, SMTP and generic webhooks via durable deliveries.",
+    "evidence": "operations.py; test_remote_and_identity.py",
+    "limit": "Not tested against live vendors. No Opsgenie-specific connector; use generic webhook where supported."
+  },
+  {
+    "number": 40,
+    "feature": "Multi-language SDKs",
+    "status": "Partial",
+    "implementation": "Python simulation + platform SDK and strict TypeScript telemetry/control-plane client.",
+    "evidence": "sdks/typescript; test_real_clients.py",
+    "limit": "TypeScript does not implement the full Python simulator. No Go/Java/.NET SDK supplied."
+  },
+  {
+    "number": 41,
+    "feature": "APIs",
+    "status": "Implemented",
+    "implementation": "Versioned REST with generated OpenAPI, and OTLP traces-only HTTP/gRPC.",
+    "evidence": "server.py; otlp.py; test_otlp.py",
+    "limit": "No control-plane gRPC service, arbitrary query language or published compatibility certification."
+  },
+  {
+    "number": 42,
+    "feature": "Terraform provider",
+    "status": "Template",
+    "implementation": "Non-destructive terraform_data/local-exec manifest bridge and tested idempotent apply CLI.",
+    "evidence": "deploy/terraform; provisioning.py; test_real_clients.py",
+    "limit": "A native Terraform provider is NOT implemented. No per-resource state/import/destroy/drift reconciliation; Terraform binary was unavailable."
+  },
+  {
+    "number": 43,
+    "feature": "Webhooks",
+    "status": "Implemented",
+    "implementation": "Signed durable events, pinned connector versions, retry/backoff, dead-letter state and explicit replay.",
+    "evidence": "operations.py; test_operations.py",
+    "limit": "Consumers must deduplicate; exactly-once delivery is not claimed."
+  },
+  {
+    "number": 44,
+    "feature": "Air-gapped operation",
+    "status": "Partial",
+    "implementation": "No mandatory hosted dependency for local tests/server; offline wheelhouse preparation script and deployment instructions.",
+    "evidence": "scripts/download_wheelhouse.sh; DEPLOYMENT.md",
+    "limit": "No third-party offline dependency bundle or certified isolated deployment included. Disable external evaluators/connectors and supply local dependencies."
+  },
+  {
+    "number": 45,
+    "feature": "Backups and DR",
+    "status": "Partial",
+    "implementation": "Authenticated encrypted SQLite+local-artifact backup, empty-directory restore and integrity/tamper tests.",
+    "evidence": "operations.py; test_operations.py",
+    "limit": "No PostgreSQL PITR/S3 backup automation, cross-region drill, measured customer RPO/RTO or scheduled backup service."
+  },
+  {
+    "number": 46,
+    "feature": "Upgrade guarantees",
+    "status": "Partial",
+    "implementation": "Frozen Alembic initial schema, version checks, idempotent init and backup-based recovery instructions.",
+    "evidence": "migrations/; test_operations.py",
+    "limit": "No historical server upgrade chain, zero-downtime guarantee, LTS contract or destructive rollback support."
+  },
+  {
+    "number": 47,
+    "feature": "Platform observability",
+    "status": "Partial",
+    "implementation": "Health/readiness, request IDs, structured request logs and authenticated Prometheus-style database gauges.",
+    "evidence": "middleware.py; server.py; test_access_and_versions.py",
+    "limit": "Database gauges are tenant-scoped; there is no built-in request histogram. No built-in platform OTel exporter, Grafana deployment or measured availability SLO."
+  },
+  {
+    "number": 48,
+    "feature": "Usage and quotas",
+    "status": "Implemented",
+    "implementation": "Atomic project daily usage limits, metering, queue cost reservations and console statements.",
+    "evidence": "services.py; server.py; test_jobs_and_runner.py",
+    "limit": "Not a complete commercial entitlement or multi-region rate-limiting system."
+  },
+  {
+    "number": 49,
+    "feature": "Billing",
+    "status": "Partial",
+    "implementation": "Configurable integer micro-USD usage statement drafts and immutable monthly records.",
+    "evidence": "server.py; test_browser.py",
+    "limit": "No payments, subscriptions, taxes, credits, collections, Stripe, seat licensing or accounting compliance."
+  },
+  {
+    "number": 50,
+    "feature": "SOC 2 and certifications",
+    "status": "External",
+    "implementation": "Evidence/control checklist and explicit procurement status documentation.",
+    "evidence": "COMMERCIAL_READINESS.md; SECURITY.md",
+    "limit": "Certification, auditor engagement, operating evidence, GDPR legal assessment and BAAs are not code and are NOT completed."
+  },
+  {
+    "number": 51,
+    "feature": "Trust center",
+    "status": "Implemented",
+    "implementation": "Locally served /trust transparency page and deployment/security documentation.",
+    "evidence": "static/trust.html; SECURITY.md",
+    "limit": "No invented badges, certificates, customer logos, subprocessor claims or hosted public trust domain."
+  },
+  {
+    "number": 52,
+    "feature": "Security program",
+    "status": "Partial",
+    "implementation": "Threat/control documentation, vulnerability-reporting guidance, supply-chain scan/attestation CI templates and local hardening tests.",
+    "evidence": "SECURITY.md; .github/workflows; tests/platform",
+    "limit": "No independent penetration test, completed CVE scan, signing identity, bug bounty or staffed response organization."
+  },
+  {
+    "number": 53,
+    "feature": "Support infrastructure",
+    "status": "External",
+    "implementation": "Support/incident runbooks and commercial launch responsibilities.",
+    "evidence": "COMMERCIAL_READINESS.md; OPERATIONS.md",
+    "limit": "No staffed help desk, contracted SLA, guaranteed response time, 24x7 coverage or support address is represented as existing."
+  },
+  {
+    "number": 54,
+    "feature": "Documentation",
+    "status": "Implemented",
+    "implementation": "Quickstart, SDK examples, APIs, security, deployment, operations, compatibility, migration and evidence-linked capability matrix.",
+    "evidence": "README.md; docs/",
+    "limit": "Documentation explains implemented behavior and limits; not every framework has live end-to-end qualification."
+  },
+  {
+    "number": 55,
+    "feature": "Enterprise examples",
+    "status": "Implemented",
+    "implementation": "Nine local payment/IT/inventory/research scenarios, support workflow, production capture, evaluator and declarative manifest.",
+    "evidence": "examples/enterprise; test_hardening.py",
+    "limit": "Simulated fixtures, not live regulated application integrations or clinical/financial validation."
+  },
+  {
+    "number": 56,
+    "feature": "Scenario library",
+    "status": "Partial",
+    "implementation": "Curated local JSON packs with checksums, restricted provisioning and no downloaded code execution.",
+    "evidence": "examples/packs; provisioning.py; test_real_clients.py",
+    "limit": "No public marketplace, signed publisher registry, network package installer or ecosystem moderation service."
+  }
+]

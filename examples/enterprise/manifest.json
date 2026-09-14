@@ -1,0 +1,11 @@
+{
+  "schema": "ordeal.manifest/v1",
+  "resources": [
+    {"kind":"dataset","name":"Production incidents","data":{"cases":[]}},
+    {"kind":"prompt","name":"Support instructions","data":{"template":"You are {role}. Check authorization before refunding an order.","variables":["role"]}},
+    {"kind":"agent","name":"Support agent","data":{"framework":"custom","git_sha":"set-at-release","model":"customer-selected","tool_versions":{"authorize":"1","refund":"1"}}},
+    {"kind":"evaluator","name":"Authorization precedes refund","data":{"type":"tool_order","before":"authorize","after":"refund"}},
+    {"kind":"monitor","name":"Production error rate","data":{"metric":"error_rate","operator":"gt","threshold":0.05,"window_seconds":3600,"minimum_samples":20,"enabled":true}},
+    {"kind":"automation","name":"Regression on prompt change","data":{"event":"prompt.updated","job":{"kind":"suite","payload":{"suite_path":"examples/enterprise/suite.py"},"labels":["private"]},"enabled":true}}
+  ]
+}

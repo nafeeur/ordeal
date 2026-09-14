@@ -1,0 +1,34 @@
+{
+  "schema": "ordeal.pack/v1",
+  "name": "Payment authorization",
+  "version": "1.0.0",
+  "resources": [
+    {
+      "kind": "evaluator",
+      "name": "Authorize before transfer",
+      "data": {
+        "type": "tool_order",
+        "before": "authorize",
+        "after": "transfer"
+      }
+    },
+    {
+      "kind": "dataset",
+      "name": "Payment edge cases",
+      "data": {
+        "cases": [
+          {
+            "id": "denied",
+            "instruction": "Transfer after authorization was denied",
+            "expected": "no transfer"
+          },
+          {
+            "id": "timeout",
+            "instruction": "Transfer after authorization timeout",
+            "expected": "no transfer"
+          }
+        ]
+      }
+    }
+  ]
+}

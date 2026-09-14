@@ -1,0 +1,12 @@
+{
+  "python_wheel": "ordeal_agent-0.3.0-py3-none-any.whl",
+  "python_wheel_sha256": "d39623d80ffc798132b9301b9e5e5fcaa39f5bc8eaa68ab8fdb670fe32f6a94a",
+  "packaged_static_assets_and_migrations": true,
+  "npm_offline_local_tarball_install": true,
+  "npm_installed_import_and_origin_guard": true,
+  "deployment_secret_generation_permissions_and_overwrite_guard": true,
+  "notes": [
+    "Local tarball install needs no registry access. Python wheel smoke reused preinstalled third-party dependencies.",
+    "No Docker, Kubernetes or Terraform process was executed."
+  ]
+}

@@ -1,0 +1,101 @@
+RUN /opt/pyvenv/bin/python -m compileall -q src
+RUN /opt/pyvenv/bin/python -m pytest -p pytest_asyncio.plugin -q -o faulthandler_timeout=30 --ignore=tests/platform/test_browser.py --junitxml=release-evidence/python-junit.xml
+........................................................................ [ 44%]
+........................................................................ [ 88%]
+............s......                                                      [100%]
+=============================== warnings summary ===============================
+tests/platform/test_hardening.py::test_full_production_to_dataset_to_replay_regression
+  /opt/pyvenv/lib/python3.13/site-packages/websockets/legacy/__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+tests/platform/test_hardening.py::test_full_production_to_dataset_to_replay_regression
+  /opt/pyvenv/lib/python3.13/site-packages/uvicorn/protocols/websockets/websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+    from websockets.server import WebSocketServerProtocol
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+162 passed, 1 skipped, 2 warnings in 26.69s
+RUN /opt/pyvenv/bin/python -m pytest -p pytest_asyncio.plugin -q -o faulthandler_timeout=30 tests/platform/test_browser.py --junitxml=release-evidence/browser-junit.xml
+....                                                                     [100%]
+=============================== warnings summary ===============================
+tests/platform/test_browser.py::test_browser_trace_dataset_evaluation_review
+  /opt/pyvenv/lib/python3.13/site-packages/websockets/legacy/__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+tests/platform/test_browser.py::test_browser_trace_dataset_evaluation_review
+  /opt/pyvenv/lib/python3.13/site-packages/uvicorn/protocols/websockets/websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+    from websockets.server import WebSocketServerProtocol
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+4 passed, 2 warnings in 11.03s
+RUN tsc -p sdks/typescript/tsconfig.json
+RUN node --test /mnt/data/ordeal-enterprise/sdks/typescript/test/sdk.test.mjs
+TAP version 13
+# Subtest: redaction preserves structure while removing sensitive values
+ok 1 - redaction preserves structure while removing sensitive values
+  ---
+  duration_ms: 1.940193
+  type: 'test'
+  ...
+# Subtest: requests cannot leak credentials to a caller-controlled origin
+ok 2 - requests cannot leak credentials to a caller-controlled origin
+  ---
+  duration_ms: 0.425792
+  type: 'test'
+  ...
+# Subtest: typed API errors retain status but not credentials
+ok 3 - typed API errors retain status but not credentials
+  ---
+  duration_ms: 16.664127
+  type: 'test'
+  ...
+# Subtest: trace records ordered behavior, unknown cost, and redacts before transport
+ok 4 - trace records ordered behavior, unknown cost, and redacts before transport
+  ---
+  duration_ms: 1.972271
+  type: 'test'
+  ...
+# Subtest: export failures are explicit and do not mask application failure
+ok 5 - export failures are explicit and do not mask application failure
+  ---
+  duration_ms: 0.492933
+  type: 'test'
+  ...
+# Subtest: strict export failure is not masked by a sealed-trace error
+ok 6 - strict export failure is not masked by a sealed-trace error
+  ---
+  duration_ms: 0.249015
+  type: 'test'
+  ...
+# Subtest: invalid measurement is rejected before the tool executes
+ok 7 - invalid measurement is rejected before the tool executes
+  ---
+  duration_ms: 0.211519
+  type: 'test'
+  ...
+# Subtest: fail-open export records serialization failures
+ok 8 - fail-open export records serialization failures
+  ---
+  duration_ms: 0.169476
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 77.964647
+RUN /opt/pyvenv/bin/python -m ordeal_agent.cli run examples/enterprise/suite.py --min-pass-rate 1.0 --json release-evidence/enterprise-report.json --junit release-evidence/enterprise-junit.xml
+enterprise-workflows: pass=9 fail=0 incomplete=0 error=0 pass_rate=1.000 flaky_rate=0.000 tokens=unknown cost=unknown p50=0.0ms p95=0.1ms
+  PASS       payment-authorized[default][0] 0.1ms tokens=unknown cost=unknown
+  PASS       payment-denied[default][0] 0.1ms tokens=unknown cost=unknown
+  PASS       authorization-timeout[default][0] 0.0ms tokens=unknown cost=unknown
+  PASS       it-access-approved[default][0] 0.0ms tokens=unknown cost=unknown
+  PASS       it-access-denied[default][0] 0.0ms tokens=unknown cost=unknown
+  PASS       inventory-reserve[default][0] 0.0ms tokens=unknown cost=unknown
+  PASS       inventory-empty[default][0] 0.0ms tokens=unknown cost=unknown
+  PASS       inventory-transient-error[default][0] 0.0ms tokens=unknown cost=unknown
+  PASS       research-review-publish[default][0] 0.1ms tokens=unknown cost=unknown
+All requested checks exited successfully. See docs/TESTING.md for qualification limits.

@@ -1,0 +1,16 @@
+{
+  "version": "0.3.0",
+  "python_tests_passed": 166,
+  "python_tests_skipped": 1,
+  "typescript_tests_passed": 8,
+  "enterprise_smoke_scenarios": 9,
+  "all_release_commands_exited_successfully": true,
+  "capability_status_counts": {
+    "Implemented": 31,
+    "Partial": 22,
+    "Template": 1,
+    "External": 2
+  },
+  "browser_transport": "Explicit Chromium-to-real-HTTP test bridge; not native browser-network qualification",
+  "commercial_status": "Controlled-pilot implementation release, not independently qualified enterprise GA"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@ordeal/agent",
+  "version": "0.3.0",
+  "description": "Typed production telemetry and control-plane client for standalone Ordeal",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {"node": ">=20"},
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {".": {"types": "./dist/index.d.ts", "import": "./dist/index.js"}},
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {"build": "tsc -p tsconfig.json", "test": "node --test test/*.test.mjs"},
+  "devDependencies": {"typescript": ">=5.6 <6"}
+}

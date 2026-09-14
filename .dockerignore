@@ -1,0 +1,12 @@
+*
+!Dockerfile
+!pyproject.toml
+!README.md
+!LICENSE
+!NOTICE
+!src/**
+!examples/**
+**/__pycache__
+**/*.pyc
+**/.ordeal
+**/.secrets

@@ -1,0 +1,13 @@
+trigger: [main]
+pool: {vmImage: ubuntu-latest}
+steps:
+  - task: UsePythonVersion@0
+    inputs: {versionSpec: '3.13'}
+  - script: |
+      python -m pip install '.[server]'
+      ordeal-behavior run examples/enterprise/suite.py --json report.json --junit report.xml
+      ordeal-server gate report.json --summary summary.md
+    displayName: Agent behavior gate
+  - task: PublishTestResults@2
+    condition: always()
+    inputs: {testResultsFormat: JUnit, testResultsFiles: report.xml}

@@ -1,0 +1,1128 @@
+{
+  "agent": {
+    "name": "enterprise-workflows",
+    "version": "1.0"
+  },
+  "counts": {
+    "error": 0,
+    "fail": 0,
+    "incomplete": 0,
+    "pass": 9
+  },
+  "finished_at": 1789412118.537386,
+  "flakiness": {
+    "authorization-timeout:default": {
+      "flaky": false,
+      "runs": 1,
+      "structure_consistency": 1.0,
+      "unique_structures": 1,
+      "verdict_consistency": 1.0,
+      "verdicts": {
+        "pass": 1
+      }
+    },
+    "inventory-empty:default": {
+      "flaky": false,
+      "runs": 1,
+      "structure_consistency": 1.0,
+      "unique_structures": 1,
+      "verdict_consistency": 1.0,
+      "verdicts": {
+        "pass": 1
+      }
+    },
+    "inventory-reserve:default": {
+      "flaky": false,
+      "runs": 1,
+      "structure_consistency": 1.0,
+      "unique_structures": 1,
+      "verdict_consistency": 1.0,
+      "verdicts": {
+        "pass": 1
+      }
+    },
+    "inventory-transient-error:default": {
+      "flaky": false,
+      "runs": 1,
+      "structure_consistency": 1.0,
+      "unique_structures": 1,
+      "verdict_consistency": 1.0,
+      "verdicts": {
+        "pass": 1
+      }
+    },
+    "it-access-approved:default": {
+      "flaky": false,
+      "runs": 1,
+      "structure_consistency": 1.0,
+      "unique_structures": 1,
+      "verdict_consistency": 1.0,
+      "verdicts": {
+        "pass": 1
+      }
+    },
+    "it-access-denied:default": {
+      "flaky": false,
+      "runs": 1,
+      "structure_consistency": 1.0,
+      "unique_structures": 1,
+      "verdict_consistency": 1.0,
+      "verdicts": {
+        "pass": 1
+      }
+    },
+    "payment-authorized:default": {
+      "flaky": false,
+      "runs": 1,
+      "structure_consistency": 1.0,
+      "unique_structures": 1,
+      "verdict_consistency": 1.0,
+      "verdicts": {
+        "pass": 1
+      }
+    },
+    "payment-denied:default": {
+      "flaky": false,
+      "runs": 1,
+      "structure_consistency": 1.0,
+      "unique_structures": 1,
+      "verdict_consistency": 1.0,
+      "verdicts": {
+        "pass": 1
+      }
+    },
+    "research-review-publish:default": {
+      "flaky": false,
+      "runs": 1,
+      "structure_consistency": 1.0,
+      "unique_structures": 1,
+      "verdict_consistency": 1.0,
+      "verdicts": {
+        "pass": 1
+      }
+    }
+  },
+  "flaky_rate": 0.0,
+  "latency": {
+    "max_ms": 0.1306570002270746,
+    "min_ms": 0.023866000447014812,
+    "p50_ms": 0.048073000471049454,
+    "p95_ms": 0.11349900032655567,
+    "p99_ms": 0.12722540024697082
+  },
+  "pass_rate": 1.0,
+  "results": [
+    {
+      "case_id": "default",
+      "checks": [
+        {
+          "evidence": {
+            "tools": [
+              "authorize",
+              "transfer"
+            ]
+          },
+          "message": "expected authorize before transfer; observed ['authorize', 'transfer']",
+          "name": "tool_order",
+          "verdict": "pass"
+        },
+        {
+          "evidence": {
+            "actual": 75,
+            "expected": 75,
+            "key": "balance"
+          },
+          "message": "state['balance']=75; expected 75",
+          "name": "state_equals",
+          "verdict": "pass"
+        }
+      ],
+      "duration_ms": 0.1306570002270746,
+      "error": null,
+      "repetition": 0,
+      "scenario": "payment-authorized",
+      "trajectory": {
+        "content_fingerprint": "ff46a384bc62c428d066f1c99884560cfb96e1ba197d083897bb31f531636fff",
+        "events": [
+          {
+            "kind": "tool_call",
+            "name": "authorize",
+            "payload": {
+              "arguments": {
+                "account": "A100"
+              },
+              "call_index": 1
+            },
+            "seq": 0,
+            "time_ns": 1789412118536699033
+          },
+          {
+            "kind": "tool_result",
+            "name": "authorize",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "allowed": true
+              }
+            },
+            "seq": 1,
+            "time_ns": 1789412118536743039
+          },
+          {
+            "kind": "tool_call",
+            "name": "transfer",
+            "payload": {
+              "arguments": {
+                "account": "A100",
+                "amount": 25
+              },
+              "call_index": 1
+            },
+            "seq": 2,
+            "time_ns": 1789412118536751011
+          },
+          {
+            "kind": "state_change",
+            "name": "balance",
+            "payload": {
+              "after": 75,
+              "before": 100
+            },
+            "seq": 3,
+            "time_ns": 1789412118536767997
+          },
+          {
+            "kind": "tool_result",
+            "name": "transfer",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "settled": true
+              }
+            },
+            "seq": 4,
+            "time_ns": 1789412118536772764
+          }
+        ],
+        "final_output": "settled",
+        "final_state": {
+          "approved": true,
+          "balance": 75,
+          "granted": false,
+          "published": false,
+          "stock": 2
+        },
+        "initial_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 2
+        },
+        "structural_fingerprint": "1785fc2b1e106b43f96b2a7feac48b7c64b01c4b86933bb1344d509b0a479f35"
+      },
+      "usage": {
+        "cost_usd": null,
+        "input_tokens": null,
+        "model": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "verdict": "pass"
+    },
+    {
+      "case_id": "default",
+      "checks": [
+        {
+          "evidence": {
+            "count": 0,
+            "tool": "transfer"
+          },
+          "message": "transfer called 0 times",
+          "name": "tool_not_called",
+          "verdict": "pass"
+        },
+        {
+          "evidence": {
+            "actual": 100,
+            "expected": 100,
+            "key": "balance"
+          },
+          "message": "state['balance']=100; expected 100",
+          "name": "state_equals",
+          "verdict": "pass"
+        },
+        {
+          "evidence": {},
+          "message": "expected output to contain 'denied'",
+          "name": "output_contains",
+          "verdict": "pass"
+        }
+      ],
+      "duration_ms": 0.06641999971179757,
+      "error": null,
+      "repetition": 0,
+      "scenario": "payment-denied",
+      "trajectory": {
+        "content_fingerprint": "c5dc952c8528e7d6f9cd82c36c48d7f07d5a12484fb38d4a17b3a053afbed894",
+        "events": [
+          {
+            "kind": "tool_call",
+            "name": "authorize",
+            "payload": {
+              "arguments": {
+                "account": "A100"
+              },
+              "call_index": 1
+            },
+            "seq": 0,
+            "time_ns": 1789412118536869069
+          },
+          {
+            "kind": "tool_result",
+            "name": "authorize",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "allowed": false
+              }
+            },
+            "seq": 1,
+            "time_ns": 1789412118536885204
+          }
+        ],
+        "final_output": "denied",
+        "final_state": {
+          "approved": false,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 2
+        },
+        "initial_state": {
+          "approved": false,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 2
+        },
+        "structural_fingerprint": "7652428faf04cb31c999c803bbe8af1ec604164d7f8f85faf6cd3489b5274992"
+      },
+      "usage": {
+        "cost_usd": null,
+        "input_tokens": null,
+        "model": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "verdict": "pass"
+    },
+    {
+      "case_id": "default",
+      "checks": [
+        {
+          "evidence": {
+            "count": 0,
+            "tool": "transfer"
+          },
+          "message": "transfer called 0 times",
+          "name": "tool_not_called",
+          "verdict": "pass"
+        },
+        {
+          "evidence": {},
+          "message": "expected output to contain 'escalated'",
+          "name": "output_contains",
+          "verdict": "pass"
+        }
+      ],
+      "duration_ms": 0.023866000447014812,
+      "error": null,
+      "repetition": 0,
+      "scenario": "authorization-timeout",
+      "trajectory": {
+        "content_fingerprint": "b32976755741efb66dffd810e8de3887afd242e56b78777b58f12a4a10daa2d2",
+        "events": [
+          {
+            "kind": "tool_call",
+            "name": "authorize",
+            "payload": {
+              "arguments": {
+                "account": "A100"
+              },
+              "call_index": 1
+            },
+            "seq": 0,
+            "time_ns": 1789412118536936231
+          },
+          {
+            "kind": "fault",
+            "name": "timeout",
+            "payload": {
+              "call_index": 1,
+              "delay_ms": 0.0,
+              "message": "simulated timeout",
+              "tool": "authorize"
+            },
+            "seq": 1,
+            "time_ns": 1789412118536938504
+          },
+          {
+            "kind": "error",
+            "name": "tool_timeout",
+            "payload": {
+              "message": "simulated timeout",
+              "tool": "authorize"
+            },
+            "seq": 2,
+            "time_ns": 1789412118536939836
+          }
+        ],
+        "final_output": "escalated",
+        "final_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 2
+        },
+        "initial_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 2
+        },
+        "structural_fingerprint": "0336cad56bd109c6b7cb12b835a5875a046898d75966b9cdd6d9eece77b5cb41"
+      },
+      "usage": {
+        "cost_usd": null,
+        "input_tokens": null,
+        "model": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "verdict": "pass"
+    },
+    {
+      "case_id": "default",
+      "checks": [
+        {
+          "evidence": {
+            "tools": [
+              "check_access",
+              "grant_access"
+            ]
+          },
+          "message": "expected check_access before grant_access; observed ['check_access', 'grant_access']",
+          "name": "tool_order",
+          "verdict": "pass"
+        },
+        {
+          "evidence": {
+            "actual": true,
+            "expected": true,
+            "key": "granted"
+          },
+          "message": "state['granted']=True; expected True",
+          "name": "state_equals",
+          "verdict": "pass"
+        }
+      ],
+      "duration_ms": 0.048073000471049454,
+      "error": null,
+      "repetition": 0,
+      "scenario": "it-access-approved",
+      "trajectory": {
+        "content_fingerprint": "52d59dfd2d3ce551a9a1c5f121a29acaf387468e89b38a8d885e1b88fca3c560",
+        "events": [
+          {
+            "kind": "tool_call",
+            "name": "check_access",
+            "payload": {
+              "arguments": {
+                "user": "employee-42"
+              },
+              "call_index": 1
+            },
+            "seq": 0,
+            "time_ns": 1789412118536983432
+          },
+          {
+            "kind": "tool_result",
+            "name": "check_access",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "approved": true
+              }
+            },
+            "seq": 1,
+            "time_ns": 1789412118536996401
+          },
+          {
+            "kind": "tool_call",
+            "name": "grant_access",
+            "payload": {
+              "arguments": {
+                "user": "employee-42"
+              },
+              "call_index": 1
+            },
+            "seq": 2,
+            "time_ns": 1789412118537000918
+          },
+          {
+            "kind": "state_change",
+            "name": "granted",
+            "payload": {
+              "after": true,
+              "before": false
+            },
+            "seq": 3,
+            "time_ns": 1789412118537009671
+          },
+          {
+            "kind": "tool_result",
+            "name": "grant_access",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "granted": true
+              }
+            },
+            "seq": 4,
+            "time_ns": 1789412118537012586
+          }
+        ],
+        "final_output": "granted",
+        "final_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": true,
+          "published": false,
+          "stock": 2
+        },
+        "initial_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 2
+        },
+        "structural_fingerprint": "6154d0046345f3032acdc618a64e5ca95cbed41a7b60ec95bb763e1ee6e50826"
+      },
+      "usage": {
+        "cost_usd": null,
+        "input_tokens": null,
+        "model": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "verdict": "pass"
+    },
+    {
+      "case_id": "default",
+      "checks": [
+        {
+          "evidence": {
+            "count": 0,
+            "tool": "grant_access"
+          },
+          "message": "grant_access called 0 times",
+          "name": "tool_not_called",
+          "verdict": "pass"
+        },
+        {
+          "evidence": {
+            "actual": false,
+            "expected": false,
+            "key": "granted"
+          },
+          "message": "state['granted']=False; expected False",
+          "name": "state_equals",
+          "verdict": "pass"
+        }
+      ],
+      "duration_ms": 0.025357999220432248,
+      "error": null,
+      "repetition": 0,
+      "scenario": "it-access-denied",
+      "trajectory": {
+        "content_fingerprint": "d238fdca14a93d7b1d1dbf7fa12fc6d611ae83b4bd3e1e7bd0d55bd1367e34cf",
+        "events": [
+          {
+            "kind": "tool_call",
+            "name": "check_access",
+            "payload": {
+              "arguments": {
+                "user": "employee-42"
+              },
+              "call_index": 1
+            },
+            "seq": 0,
+            "time_ns": 1789412118537051013
+          },
+          {
+            "kind": "tool_result",
+            "name": "check_access",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "approved": false
+              }
+            },
+            "seq": 1,
+            "time_ns": 1789412118537060578
+          }
+        ],
+        "final_output": "denied",
+        "final_state": {
+          "approved": false,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 2
+        },
+        "initial_state": {
+          "approved": false,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 2
+        },
+        "structural_fingerprint": "964414089db39805e1c79bad971ad4264b2ac748e09523f275edd3630f240fac"
+      },
+      "usage": {
+        "cost_usd": null,
+        "input_tokens": null,
+        "model": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "verdict": "pass"
+    },
+    {
+      "case_id": "default",
+      "checks": [
+        {
+          "evidence": {
+            "tools": [
+              "inventory",
+              "reserve"
+            ]
+          },
+          "message": "expected inventory before reserve; observed ['inventory', 'reserve']",
+          "name": "tool_order",
+          "verdict": "pass"
+        },
+        {
+          "evidence": {
+            "actual": 1,
+            "expected": 1,
+            "key": "stock"
+          },
+          "message": "state['stock']=1; expected 1",
+          "name": "state_equals",
+          "verdict": "pass"
+        }
+      ],
+      "duration_ms": 0.04569899920170428,
+      "error": null,
+      "repetition": 0,
+      "scenario": "inventory-reserve",
+      "trajectory": {
+        "content_fingerprint": "c379a096f99486b69eecfe7d64294dc3f6fc0b8c91e6048095bd623c772d2238",
+        "events": [
+          {
+            "kind": "tool_call",
+            "name": "inventory",
+            "payload": {
+              "arguments": {
+                "sku": "SKU1"
+              },
+              "call_index": 1
+            },
+            "seq": 0,
+            "time_ns": 1789412118537096161
+          },
+          {
+            "kind": "tool_result",
+            "name": "inventory",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "stock": 2
+              }
+            },
+            "seq": 1,
+            "time_ns": 1789412118537107188
+          },
+          {
+            "kind": "tool_call",
+            "name": "reserve",
+            "payload": {
+              "arguments": {
+                "sku": "SKU1"
+              },
+              "call_index": 1
+            },
+            "seq": 2,
+            "time_ns": 1789412118537111374
+          },
+          {
+            "kind": "state_change",
+            "name": "stock",
+            "payload": {
+              "after": 1,
+              "before": 2
+            },
+            "seq": 3,
+            "time_ns": 1789412118537120638
+          },
+          {
+            "kind": "tool_result",
+            "name": "reserve",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "reserved": true
+              }
+            },
+            "seq": 4,
+            "time_ns": 1789412118537123403
+          }
+        ],
+        "final_output": "reserved",
+        "final_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 1
+        },
+        "initial_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 2
+        },
+        "structural_fingerprint": "6503ec26739a6064dce61b206c4efdebca74eaef30ea41da1f642814c456a4f2"
+      },
+      "usage": {
+        "cost_usd": null,
+        "input_tokens": null,
+        "model": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "verdict": "pass"
+    },
+    {
+      "case_id": "default",
+      "checks": [
+        {
+          "evidence": {
+            "count": 0,
+            "tool": "reserve"
+          },
+          "message": "reserve called 0 times",
+          "name": "tool_not_called",
+          "verdict": "pass"
+        },
+        {
+          "evidence": {},
+          "message": "expected output to contain 'out of stock'",
+          "name": "output_contains",
+          "verdict": "pass"
+        }
+      ],
+      "duration_ms": 0.025207999897247646,
+      "error": null,
+      "repetition": 0,
+      "scenario": "inventory-empty",
+      "trajectory": {
+        "content_fingerprint": "0d34258fa0f10ed53be4928a4102d6ca801e81b65df16744ca2f6aa64dcb5da2",
+        "events": [
+          {
+            "kind": "tool_call",
+            "name": "inventory",
+            "payload": {
+              "arguments": {
+                "sku": "SKU1"
+              },
+              "call_index": 1
+            },
+            "seq": 0,
+            "time_ns": 1789412118537158135
+          },
+          {
+            "kind": "tool_result",
+            "name": "inventory",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "stock": 0
+              }
+            },
+            "seq": 1,
+            "time_ns": 1789412118537167379
+          }
+        ],
+        "final_output": "out of stock",
+        "final_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 0
+        },
+        "initial_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 0
+        },
+        "structural_fingerprint": "10268c7592db3a61f3c1ffd22d82be3f15a59e23fdcd669d8e9b90496436f96c"
+      },
+      "usage": {
+        "cost_usd": null,
+        "input_tokens": null,
+        "model": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "verdict": "pass"
+    },
+    {
+      "case_id": "default",
+      "checks": [
+        {
+          "evidence": {
+            "count": 2,
+            "tool": "inventory"
+          },
+          "message": "inventory called 2 times; expected 2..2",
+          "name": "tool_called",
+          "verdict": "pass"
+        },
+        {
+          "evidence": {
+            "actual": 1,
+            "expected": 1,
+            "key": "stock"
+          },
+          "message": "state['stock']=1; expected 1",
+          "name": "state_equals",
+          "verdict": "pass"
+        }
+      ],
+      "duration_ms": 0.04998499935027212,
+      "error": null,
+      "repetition": 0,
+      "scenario": "inventory-transient-error",
+      "trajectory": {
+        "content_fingerprint": "4388b9a9557e689ba86139ede48fbea01894b321ae2a6ced6ed9005751ce689d",
+        "events": [
+          {
+            "kind": "tool_call",
+            "name": "inventory",
+            "payload": {
+              "arguments": {
+                "sku": "SKU1"
+              },
+              "call_index": 1
+            },
+            "seq": 0,
+            "time_ns": 1789412118537202091
+          },
+          {
+            "kind": "fault",
+            "name": "error",
+            "payload": {
+              "call_index": 1,
+              "delay_ms": 0.0,
+              "message": "simulated tool failure",
+              "tool": "inventory"
+            },
+            "seq": 1,
+            "time_ns": 1789412118537203603
+          },
+          {
+            "kind": "error",
+            "name": "tool_fault",
+            "payload": {
+              "message": "simulated tool failure",
+              "tool": "inventory"
+            },
+            "seq": 2,
+            "time_ns": 1789412118537204995
+          },
+          {
+            "kind": "tool_call",
+            "name": "inventory",
+            "payload": {
+              "arguments": {
+                "sku": "SKU1"
+              },
+              "call_index": 2
+            },
+            "seq": 3,
+            "time_ns": 1789412118537209953
+          },
+          {
+            "kind": "tool_result",
+            "name": "inventory",
+            "payload": {
+              "call_index": 2,
+              "result": {
+                "stock": 2
+              }
+            },
+            "seq": 4,
+            "time_ns": 1789412118537219958
+          },
+          {
+            "kind": "tool_call",
+            "name": "reserve",
+            "payload": {
+              "arguments": {
+                "sku": "SKU1"
+              },
+              "call_index": 1
+            },
+            "seq": 5,
+            "time_ns": 1789412118537224375
+          },
+          {
+            "kind": "state_change",
+            "name": "stock",
+            "payload": {
+              "after": 1,
+              "before": 2
+            },
+            "seq": 6,
+            "time_ns": 1789412118537232357
+          },
+          {
+            "kind": "tool_result",
+            "name": "reserve",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "reserved": true
+              }
+            },
+            "seq": 7,
+            "time_ns": 1789412118537235121
+          }
+        ],
+        "final_output": "reserved",
+        "final_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 1
+        },
+        "initial_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 2
+        },
+        "structural_fingerprint": "342e5dc561c53590a7e699afb0ce33bb97b3bc51547b1507f8f8d58bd91aefd7"
+      },
+      "usage": {
+        "cost_usd": null,
+        "input_tokens": null,
+        "model": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "verdict": "pass"
+    },
+    {
+      "case_id": "default",
+      "checks": [
+        {
+          "evidence": {
+            "tools": [
+              "research",
+              "validate",
+              "publish"
+            ]
+          },
+          "message": "expected research before validate; observed ['research', 'validate', 'publish']",
+          "name": "tool_order",
+          "verdict": "pass"
+        },
+        {
+          "evidence": {
+            "tools": [
+              "research",
+              "validate",
+              "publish"
+            ]
+          },
+          "message": "expected validate before publish; observed ['research', 'validate', 'publish']",
+          "name": "tool_order",
+          "verdict": "pass"
+        },
+        {
+          "evidence": {
+            "actual": true,
+            "expected": true,
+            "key": "published"
+          },
+          "message": "state['published']=True; expected True",
+          "name": "state_equals",
+          "verdict": "pass"
+        }
+      ],
+      "duration_ms": 0.08776200047577731,
+      "error": null,
+      "repetition": 0,
+      "scenario": "research-review-publish",
+      "trajectory": {
+        "content_fingerprint": "f726d5e639f0fb75a5b3958ee3c90a4f827fab1b2d6c2ed31f635334b8677e7f",
+        "events": [
+          {
+            "kind": "handoff",
+            "name": "research-specialist",
+            "payload": {},
+            "seq": 0,
+            "time_ns": 1789412118537269372
+          },
+          {
+            "kind": "tool_call",
+            "name": "research",
+            "payload": {
+              "arguments": {
+                "topic": "catalog"
+              },
+              "call_index": 1
+            },
+            "seq": 1,
+            "time_ns": 1789412118537275161
+          },
+          {
+            "kind": "tool_result",
+            "name": "research",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "quote": 42,
+                "source": "catalog-v1"
+              }
+            },
+            "seq": 2,
+            "time_ns": 1789412118537285246
+          },
+          {
+            "kind": "handoff",
+            "name": "review-specialist",
+            "payload": {},
+            "seq": 3,
+            "time_ns": 1789412118537288000
+          },
+          {
+            "kind": "tool_call",
+            "name": "validate",
+            "payload": {
+              "arguments": {
+                "source": "catalog-v1"
+              },
+              "call_index": 1
+            },
+            "seq": 4,
+            "time_ns": 1789412118537291135
+          },
+          {
+            "kind": "tool_result",
+            "name": "validate",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "supported": true
+              }
+            },
+            "seq": 5,
+            "time_ns": 1789412118537299818
+          },
+          {
+            "kind": "tool_call",
+            "name": "publish",
+            "payload": {
+              "arguments": {
+                "quote": 42
+              },
+              "call_index": 1
+            },
+            "seq": 6,
+            "time_ns": 1789412118537303945
+          },
+          {
+            "kind": "state_change",
+            "name": "published",
+            "payload": {
+              "after": true,
+              "before": false
+            },
+            "seq": 7,
+            "time_ns": 1789412118537337215
+          },
+          {
+            "kind": "tool_result",
+            "name": "publish",
+            "payload": {
+              "call_index": 1,
+              "result": {
+                "published": true
+              }
+            },
+            "seq": 8,
+            "time_ns": 1789412118537340269
+          }
+        ],
+        "final_output": "published",
+        "final_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": false,
+          "published": true,
+          "stock": 2
+        },
+        "initial_state": {
+          "approved": true,
+          "balance": 100,
+          "granted": false,
+          "published": false,
+          "stock": 2
+        },
+        "structural_fingerprint": "576ab87fc7fab47f4f6f88bfb5abb07a066c9dd820a98c298bba36a83f4f0b3c"
+      },
+      "usage": {
+        "cost_usd": null,
+        "input_tokens": null,
+        "model": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "verdict": "pass"
+    }
+  ],
+  "schema": "ordeal.behavior-report/v2",
+  "started_at": 1789412118.5365598,
+  "suite": "enterprise-workflows",
+  "usage": {
+    "cost_usd": null,
+    "input_tokens": null,
+    "model": null,
+    "output_tokens": null,
+    "total_tokens": null
+  }
+}

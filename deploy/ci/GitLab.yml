@@ -1,0 +1,13 @@
+# Copy into your GitLab pipeline. No hosted credentials required for local tests.
+image: python:3.13-slim
+stages: [test]
+ordeal:
+  stage: test
+  script:
+    - python -m pip install '.[server]'
+    - ordeal-behavior run examples/enterprise/suite.py --json report.json --junit report.xml
+    - ordeal-server gate report.json --summary summary.md
+  artifacts:
+    when: always
+    paths: [report.json, summary.md]
+    reports: {junit: report.xml}

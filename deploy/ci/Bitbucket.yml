@@ -1,0 +1,10 @@
+image: python:3.13-slim
+pipelines:
+  default:
+    - step:
+        name: Agent behavior gate
+        script:
+          - python -m pip install '.[server]'
+          - ordeal-behavior run examples/enterprise/suite.py --json report.json --junit test-results/report.xml
+          - ordeal-server gate report.json --summary summary.md
+        artifacts: [report.json, summary.md, test-results/report.xml]

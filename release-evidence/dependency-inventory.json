@@ -1,0 +1,404 @@
+{
+  "schema": "ordeal.tested-dependencies/v1",
+  "generated_at": "2026-09-14T18:56:04.546568+00:00",
+  "python": "3.13.5",
+  "platform": "linux",
+  "selected_profile": [
+    "otel",
+    "s3",
+    "server"
+  ],
+  "components": [
+    {
+      "name": "alembic",
+      "version": "1.18.4",
+      "selected_extras": []
+    },
+    {
+      "name": "annotated-doc",
+      "version": "0.0.4",
+      "selected_extras": []
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.7.0",
+      "selected_extras": []
+    },
+    {
+      "name": "anyio",
+      "version": "4.13.0",
+      "selected_extras": []
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "selected_extras": []
+    },
+    {
+      "name": "boto3",
+      "version": "1.43.18",
+      "selected_extras": []
+    },
+    {
+      "name": "botocore",
+      "version": "1.43.18",
+      "selected_extras": []
+    },
+    {
+      "name": "certifi",
+      "version": "2026.5.20",
+      "selected_extras": []
+    },
+    {
+      "name": "cffi",
+      "version": "2.0.0",
+      "selected_extras": []
+    },
+    {
+      "name": "click",
+      "version": "8.1.8",
+      "selected_extras": []
+    },
+    {
+      "name": "cryptography",
+      "version": "46.0.4",
+      "selected_extras": []
+    },
+    {
+      "name": "fastapi",
+      "version": "0.128.2",
+      "selected_extras": []
+    },
+    {
+      "name": "greenlet",
+      "version": "3.5.1",
+      "selected_extras": []
+    },
+    {
+      "name": "grpcio",
+      "version": "1.80.0",
+      "selected_extras": []
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "selected_extras": []
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9",
+      "selected_extras": []
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1",
+      "selected_extras": []
+    },
+    {
+      "name": "idna",
+      "version": "3.17",
+      "selected_extras": []
+    },
+    {
+      "name": "jmespath",
+      "version": "1.1.0",
+      "selected_extras": []
+    },
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "selected_extras": []
+    },
+    {
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1",
+      "selected_extras": []
+    },
+    {
+      "name": "Mako",
+      "version": "1.3.12",
+      "selected_extras": []
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "selected_extras": []
+    },
+    {
+      "name": "MarkupSafe",
+      "version": "3.0.3",
+      "selected_extras": []
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "selected_extras": []
+    },
+    {
+      "name": "opentelemetry-proto",
+      "version": "1.42.1",
+      "selected_extras": []
+    },
+    {
+      "name": "ordeal-agent",
+      "version": "0.3.0",
+      "selected_extras": [
+        "otel",
+        "s3",
+        "server"
+      ]
+    },
+    {
+      "name": "protobuf",
+      "version": "6.33.6",
+      "selected_extras": []
+    },
+    {
+      "name": "pycparser",
+      "version": "3.0",
+      "selected_extras": []
+    },
+    {
+      "name": "pydantic",
+      "version": "2.13.4",
+      "selected_extras": []
+    },
+    {
+      "name": "pydantic_core",
+      "version": "2.46.4",
+      "selected_extras": []
+    },
+    {
+      "name": "Pygments",
+      "version": "2.20.0",
+      "selected_extras": []
+    },
+    {
+      "name": "PyJWT",
+      "version": "2.13.0",
+      "selected_extras": [
+        "crypto"
+      ]
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "selected_extras": []
+    },
+    {
+      "name": "referencing",
+      "version": "0.37.0",
+      "selected_extras": []
+    },
+    {
+      "name": "rich",
+      "version": "15.0.0",
+      "selected_extras": []
+    },
+    {
+      "name": "rpds-py",
+      "version": "2026.5.1",
+      "selected_extras": []
+    },
+    {
+      "name": "s3transfer",
+      "version": "0.18.0",
+      "selected_extras": []
+    },
+    {
+      "name": "shellingham",
+      "version": "1.5.4",
+      "selected_extras": []
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "selected_extras": []
+    },
+    {
+      "name": "SQLAlchemy",
+      "version": "2.0.50",
+      "selected_extras": []
+    },
+    {
+      "name": "starlette",
+      "version": "0.50.0",
+      "selected_extras": []
+    },
+    {
+      "name": "typer",
+      "version": "0.26.3",
+      "selected_extras": []
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "selected_extras": []
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.2",
+      "selected_extras": []
+    },
+    {
+      "name": "urllib3",
+      "version": "2.7.0",
+      "selected_extras": []
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.48.0",
+      "selected_extras": []
+    }
+  ],
+  "dependencies": {
+    "ordeal-agent": [
+      "alembic",
+      "boto3",
+      "cryptography",
+      "fastapi",
+      "grpcio",
+      "httpx",
+      "jsonschema",
+      "opentelemetry-proto",
+      "pydantic",
+      "pyjwt",
+      "sqlalchemy",
+      "typer",
+      "uvicorn"
+    ],
+    "jsonschema": [
+      "attrs",
+      "jsonschema-specifications",
+      "referencing",
+      "rpds-py"
+    ],
+    "typer": [
+      "annotated-doc",
+      "rich",
+      "shellingham"
+    ],
+    "httpx": [
+      "anyio",
+      "certifi",
+      "httpcore",
+      "idna"
+    ],
+    "fastapi": [
+      "annotated-doc",
+      "pydantic",
+      "starlette",
+      "typing-extensions",
+      "typing-inspection"
+    ],
+    "uvicorn": [
+      "click",
+      "h11"
+    ],
+    "sqlalchemy": [
+      "greenlet",
+      "typing-extensions"
+    ],
+    "alembic": [
+      "mako",
+      "sqlalchemy",
+      "typing-extensions"
+    ],
+    "pydantic": [
+      "annotated-types",
+      "pydantic-core",
+      "typing-extensions",
+      "typing-inspection"
+    ],
+    "pyjwt": [
+      "cryptography"
+    ],
+    "cryptography": [
+      "cffi"
+    ],
+    "opentelemetry-proto": [
+      "protobuf"
+    ],
+    "grpcio": [
+      "typing-extensions"
+    ],
+    "boto3": [
+      "botocore",
+      "jmespath",
+      "s3transfer"
+    ],
+    "attrs": [],
+    "jsonschema-specifications": [
+      "referencing"
+    ],
+    "referencing": [
+      "attrs",
+      "rpds-py"
+    ],
+    "rpds-py": [],
+    "shellingham": [],
+    "rich": [
+      "markdown-it-py",
+      "pygments"
+    ],
+    "annotated-doc": [],
+    "anyio": [
+      "idna"
+    ],
+    "certifi": [],
+    "httpcore": [
+      "certifi",
+      "h11"
+    ],
+    "idna": [],
+    "starlette": [
+      "anyio"
+    ],
+    "typing-extensions": [],
+    "typing-inspection": [
+      "typing-extensions"
+    ],
+    "click": [],
+    "h11": [],
+    "greenlet": [],
+    "mako": [
+      "markupsafe"
+    ],
+    "annotated-types": [],
+    "pydantic-core": [
+      "typing-extensions"
+    ],
+    "cffi": [
+      "pycparser"
+    ],
+    "protobuf": [],
+    "botocore": [
+      "jmespath",
+      "python-dateutil",
+      "urllib3"
+    ],
+    "jmespath": [],
+    "s3transfer": [
+      "botocore"
+    ],
+    "markdown-it-py": [
+      "mdurl"
+    ],
+    "pygments": [],
+    "markupsafe": [],
+    "pycparser": [],
+    "python-dateutil": [
+      "six"
+    ],
+    "urllib3": [],
+    "mdurl": [],
+    "six": []
+  },
+  "missing": [],
+  "limitations": [
+    "Observed Python 3.13 environment only; not a resolver lock or cryptographic dependency lock.",
+    "No PostgreSQL client or native agent framework extras were qualified.",
+    "Installed S3 client does not imply live S3 service validation.",
+    "No CVE/SAST/license-compatibility assessment is implied."
+  ]
+}

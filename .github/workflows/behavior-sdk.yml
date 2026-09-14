@@ -1,0 +1,81 @@
+name: behavior-sdk
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ordeal-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -e '.[dev]'
+      - run: pytest -q --ignore=tests/platform
+      - run: python -m compileall -q src
+      - run: ordeal-behavior run examples/enterprise/suite.py --min-pass-rate 1 --json report.json --junit report.xml
+      - run: ordeal-behavior experiment examples/experiments/compare.py --json experiment.json
+      - run: ordeal-behavior diff report.json report.json --html diff.html
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: core-${{ matrix.python }}
+          path: |
+            report.json
+            report.xml
+            experiment.json
+            diff.html
+  platform:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v7
+        with: {python-version: '3.13'}
+      - uses: actions/setup-node@v7
+        with: {node-version: '22', package-manager-cache: false}
+      - run: python -m pip install -e '.[server,otel,platform-test,browser]'
+      - run: python -m playwright install --with-deps chromium
+      - run: npm install --prefix sdks/typescript
+      - run: npm run build --prefix sdks/typescript
+      - run: npm test --prefix sdks/typescript
+      - run: pytest -q tests/platform --junitxml=platform.xml
+        env:
+          ORDEAL_UI_ARTIFACTS: artifacts/ui
+          # Native browser network/CSP mode: no restricted-environment bridge.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: platform-evidence
+          path: |
+            platform.xml
+            artifacts/ui
+  optional-integrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [anthropic, openai-agents, langchain, pydantic-ai, google-adk, crewai, autogen, llamaindex, smolagents, strands, mcp]
+    steps:
+      - uses: actions/checkout@v7
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v7
+        with: {python-version: '3.12'}
+      - run: python -m pip install -e ".[dev,${{ matrix.framework }}]"
+      - run: pytest -q tests/test_optional_native.py
+        env:
+          ORDEAL_OPTIONAL_FRAMEWORK: ${{ matrix.framework }}
+      - run: ordeal-behavior doctor

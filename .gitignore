@@ -1,37 +1,21 @@
-# Python
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.venv/
-.venv-bridge/
-venv/
-
-# Runtime databases / state
-*.db
-*.sqlite
-*.sqlite3
-
-# Node / Next.js
-node_modules/
-.next/
-out/
-*.tsbuildinfo
-
-# Environment / secrets
+.ordeal/
 .env
 .env.*
 !.env.example
-
-# Editors / OS
-.DS_Store
-.idea/
-.vscode/
-
-# Test / coverage artifacts
-coverage/
+__pycache__/
+*.py[cod]
+.pytest_cache/
 .coverage
 htmlcov/
-junit.xml
-
-# Logs
-*.log
+*.egg-info/
+build/
+node_modules/
+*.key
+*.pem
+*.db
+*.db-wal
+*.db-shm
+.secrets/
+.venv/
+dist/
+coverage.json
