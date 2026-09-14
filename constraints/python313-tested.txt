@@ -40,7 +40,7 @@ s3transfer==0.18.0
 shellingham==1.5.4
 six==1.17.0
 sqlalchemy==2.0.50
-starlette==0.50.0
+starlette==1.6.0
 typer==0.26.3
 typing-extensions==4.16.0
 typing-inspection==0.4.2
