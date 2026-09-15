@@ -64,7 +64,7 @@ class RunnerPolicy:
         argv = ["docker", "run", "--rm", "--name", name, "--network", "none", "--read-only",
                 "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--pids-limit", "128",
                 "--memory", f"{self.memory_mb}m", "--memory-swap", f"{self.memory_mb}m", "--cpus", str(self.cpus),
-                "--user", "65532:65532", "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
+                "--user", "65532:65532", "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",  # nosec B108 - docker --tmpfs mount destination, not a host temp-file path
                 "--mount", f"type=bind,src={self.workspace},dst=/workspace,readonly",
                 "-e", "PYTHONDONTWRITEBYTECODE=1", "-i"]
         for key in extra_env:
