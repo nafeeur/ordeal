@@ -132,8 +132,8 @@
     "feature": "Secure execution",
     "status": "Partial",
     "implementation": "Private subprocess execution, bounded output, deadlines, cancellation, allowlists; digest-pinned restricted Docker command generation.",
-    "evidence": "runner.py; test_jobs_and_runner.py",
-    "limit": "Real child-process tests passed; Docker backend was NOT daemon-tested. Trusted-process is not a sandbox. No Firecracker/Kata backend."
+    "evidence": "runner.py; test_jobs_and_runner.py; docs/TESTING.md#post-release-verification-this-branch",
+    "limit": "Real child-process tests passed. Docker backend now daemon-tested end-to-end (job queued, claimed, executed in an isolated container, completed) via a real container daemon; required --security-opt label=disable for SELinux-enforcing hosts, now applied. No sandbox-escape assessment. Trusted-process is not a sandbox. No Firecracker/Kata backend."
   },
   {
     "number": 18,

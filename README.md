@@ -102,9 +102,9 @@ suite = Suite.of("refund", Scenario(
 
 ## Known limitations
 
-- Only `LLMAgent` has been run against a live model. The other ten framework adapters (LangChain, CrewAI, AutoGen, LlamaIndex, Strands, Google ADK, OpenAI Agents SDK, pydantic-ai, smolagents, MCP) are type-shaped but untested against real providers.
-- The Docker runner backend hasn't been run against a live Docker daemon; `trusted-process` mode is not a sandbox.
-- Browser/console tests run through a test-only transport bridge, not native Chromium navigation.
+- All eleven framework adapter shims (LangChain, CrewAI, AutoGen, LlamaIndex, Strands, Google ADK, OpenAI Agents SDK, pydantic-ai, smolagents, MCP, plus `LLMAgent`) now pass CI against the real installed framework packages — three (LangChain, AutoGen, smolagents) had real bugs that silently dropped tool-call arguments or failed schema validation, fixed and verified. Only `LLMAgent` has actually driven a live model end-to-end, though; the others verify the tool-wrapping shim, not a real LLM deciding to call it through that framework.
+- The Docker runner backend has been run end-to-end against a live container daemon (job queued → claimed → executed inside an isolated, non-root, read-only, network-disabled container → completed). On an SELinux-enforcing host (Fedora/RHEL-family — common for both Docker and Podman), the bind-mounted workspace is denied at the MAC layer regardless of Unix permissions unless container confinement is relaxed for that mount; `RunnerPolicy` now passes `--security-opt label=disable` for exactly that reason. `trusted-process` mode remains explicitly not a sandbox.
+- Browser/console tests run with native Chromium navigation in CI (no transport override) and were independently re-verified locally the same way.
 - No independent penetration test, SOC 2/ISO process, or enterprise-scale (Postgres/S3/HA) validation — see [`docs/enterprise/COMMERCIAL_READINESS.md`](docs/enterprise/COMMERCIAL_READINESS.md) before selling this as a hosted service.
 
 Full itemized status: [`docs/enterprise/CAPABILITY_MATRIX.md`](docs/enterprise/CAPABILITY_MATRIX.md) · Test report: [`docs/TESTING.md`](docs/TESTING.md)

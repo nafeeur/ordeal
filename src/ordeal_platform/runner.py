@@ -62,7 +62,15 @@ class RunnerPolicy:
         if "," in str(self.workspace):
             raise ExecutionFailure("Docker mount paths containing commas are not supported")
         argv = ["docker", "run", "--rm", "--name", name, "--network", "none", "--read-only",
-                "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--pids-limit", "128",
+                "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true",
+                # On an SELinux-enforcing host (Fedora/RHEL-family, common for both Docker and
+                # Podman), a bind mount is denied at the MAC layer regardless of Unix file
+                # permissions unless the host path is relabeled or type enforcement is disabled
+                # for this container. Disabling confinement for this one container is simpler
+                # and more portable across Docker/Podman than relabeling the host workspace, and
+                # every other isolation control here (no caps, no network, read-only root,
+                # no-new-privileges) still applies.
+                "--security-opt", "label=disable", "--pids-limit", "128",
                 "--memory", f"{self.memory_mb}m", "--memory-swap", f"{self.memory_mb}m", "--cpus", str(self.cpus),
                 "--user", "65532:65532", "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",  # nosec B108 - docker --tmpfs mount destination, not a host temp-file path
                 "--mount", f"type=bind,src={self.workspace},dst=/workspace,readonly",
