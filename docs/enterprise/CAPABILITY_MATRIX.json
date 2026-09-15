@@ -133,7 +133,7 @@
     "status": "Partial",
     "implementation": "Private subprocess execution, bounded output, deadlines, cancellation, allowlists; digest-pinned restricted Docker command generation.",
     "evidence": "runner.py; test_jobs_and_runner.py; docs/TESTING.md#post-release-verification-this-branch",
-    "limit": "Real child-process tests passed. Docker backend now daemon-tested end-to-end (job queued, claimed, executed in an isolated container, completed) via a real container daemon; required --security-opt label=disable for SELinux-enforcing hosts, now applied. No sandbox-escape assessment. Trusted-process is not a sandbox. No Firecracker/Kata backend."
+    "limit": "Real child-process tests passed. Docker backend now daemon-tested end-to-end (job queued, claimed, executed in an isolated container, completed) via a real container daemon, plus a focused escape-testing pass (network, filesystem, capabilities/setuid, cgroup release_agent, tmpfs exec, fork bomb) - all blocked as intended, and one real portability bug found and fixed (SELinux MAC denial on the bind mount; fixed with a per-mount relabel, not a container-wide confinement disable). No kernel-exploit-based escape attempt or independent security review. Trusted-process is not a sandbox. No Firecracker/Kata backend."
   },
   {
     "number": 18,

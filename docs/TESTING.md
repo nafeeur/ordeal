@@ -2,14 +2,25 @@
 
 ## Post-release verification (this branch)
 
-Closed two of the boundaries below after the original release evidence was recorded:
+Closed three of the boundaries below after the original release evidence was recorded:
 
 - **Native browser testing.** The "managed Chromium blocks navigation" restriction described below was specific to the original build environment, not universal. CI (`.github/workflows/behavior-sdk.yml`) runs the browser suite with no `ORDEAL_BROWSER_TRANSPORT` override, and it was independently re-verified locally with Playwright's own Chromium against a live local server: 4/4 passed with real navigation, cookies, and network requests — no bridge.
-- **Docker daemon execution.** Built the repo's own `Dockerfile` and ran an end-to-end job through `RunnerPolicy`/`CustomerRunner` against a real container daemon (Podman, used as a Docker-CLI-compatible engine): queued a job over the real API, a `docker`-mode runner claimed it, executed the suite inside an isolated non-root/read-only/network-disabled/capability-dropped container, and the job completed with a real report (9/9 scenarios passed). This surfaced a real portability bug: on an SELinux-enforcing host (Fedora/RHEL-family — common for both Docker and Podman deployments, not a Podman-only quirk), the bind-mounted workspace was denied at the MAC layer regardless of Unix file permissions. Fixed by adding `--security-opt label=disable` to the container invocation in `src/ordeal_platform/runner.py`; every other isolation control (no capabilities, no network, read-only root, no-new-privileges, non-root UID) is unaffected.
+- **Docker daemon execution.** Built the repo's own `Dockerfile` and ran an end-to-end job through `RunnerPolicy`/`CustomerRunner` against a real container daemon (Podman, used as a Docker-CLI-compatible engine): queued a job over the real API, a `docker`-mode runner claimed it, executed the suite inside an isolated non-root/read-only/network-disabled/capability-dropped container, and the job completed with a real report (9/9 scenarios passed). This surfaced a real portability bug: on an SELinux-enforcing host (Fedora/RHEL-family — common for both Docker and Podman deployments, not a Podman-only quirk), the bind-mounted workspace was denied at the MAC layer regardless of Unix file permissions.
+- **Docker sandbox escape testing.** Ran a battery of real escape attempts using the exact argv `RunnerPolicy.command()` generates, against the real built image:
+  - Network egress despite `--network none`: blocked (`Network is unreachable`).
+  - Writing to the read-only root filesystem and to the read-only bind-mounted workspace: blocked on both (`Read-only file system`); confirmed no file appeared on the host side either.
+  - Raw `mount(2)` via ctypes, and the classic `cgroup release_agent` container-escape technique (CVE-2019-5736-adjacent): both blocked by `--cap-drop ALL` (`EPERM`).
+  - Setuid binaries present in the base image (`mount`, `chfn`, `chsh`, `gpasswd`, `newgrp`): `--security-opt no-new-privileges:true` held — `mount` refused to escalate ("must be superuser") despite its setuid bit.
+  - Writing and executing a script inside `/tmp`: blocked by the tmpfs's `noexec` mount option.
+  - Fork bomb against `--pids-limit 128`: contained at exactly 128 processes; host was unaffected.
+
+  The first fix for the bind-mount/SELinux issue (`--security-opt label=disable`) worked but was broader than necessary — it drops SELinux confinement for the *entire* container, not just the mount. Escape-testing that tradeoff directly led to a tighter fix: `-v {workspace}:/workspace:ro,z` (the trailing `,z` relabels only that mount; a documented no-op on non-SELinux hosts; standard syntax on both Docker and Podman, unlike `--mount`'s Podman-only `relabel=` option). Verified equivalent behavior with a manual `chcon -Rt container_file_t` alternative first, then confirmed `,z` does the same relabeling automatically per-run. `src/ordeal_platform/runner.py` now uses the tighter form; the container runs fully confined under SELinux again.
+
+  None of this is a claim that the sandbox is unbreakable — it's what a focused pass covering the well-known escape classes (network, filesystem, capabilities/setuid, cgroups, tmpfs exec, fork bombs) found and fixed. No kernel-exploit-based escape attempt (the category real container breakouts historically come from) was tried; that needs a dedicated security review, not a single session.
 
 The optional-framework contract matrix mentioned below has also since been fixed and is fully green in CI: three adapters (LangChain, AutoGen, smolagents) had real bugs — a missing `args_schema` silently dropped tool-call arguments, a missing `__annotations__` broke `typing.get_type_hints()`-based schema inference, and a `**kwargs`-only signature failed smolagents' parameter-name validation — found by actually installing each framework and exercising the shim, not by inspection. See the "Bump" and "Fix CI" commits on `main` for details. This still isn't the same as calling a live model provider through each framework; only `LLMAgent` (added on this branch) has done that.
 
-Sandbox escape testing, Kubernetes deployment, PostgreSQL/S3 live-service validation, and the rest of "Checks not completed here" remain open.
+Kubernetes deployment, PostgreSQL/S3 live-service validation, and the rest of "Checks not completed here" remain open.
 
 ## Actual result
 
@@ -70,7 +81,7 @@ Those constraints are **not** a cryptographic lockfile, CVE scan, universal cros
 
 ## Checks not completed here
 
-Docker sandbox escape testing (basic daemon execution is now covered — see "Post-release verification" above); Kubernetes deployment; PostgreSQL concurrency/failover/PITR; live S3 storage; Terraform provider execution; live model-provider calls through the ten non-`LLMAgent` framework adapters; native-browser CSP end-to-end tests beyond navigation/cookies/network; live cloud IdP or vendor connector accounts; provider billing; payment processing; sustained soak tests; independently measured RPO/RTO; external penetration testing; CVE/security workflow execution; signed release attestations; SOC 2/ISO audits; and staffed support/SLA delivery.
+A dedicated, kernel-exploit-based Docker sandbox security review (a focused pass covering network/filesystem/capability/cgroup/tmpfs/fork-bomb escape classes is now covered — see "Post-release verification" above); Kubernetes deployment; PostgreSQL concurrency/failover/PITR; live S3 storage; Terraform provider execution; live model-provider calls through the ten non-`LLMAgent` framework adapters; native-browser CSP end-to-end tests beyond navigation/cookies/network; live cloud IdP or vendor connector accounts; provider billing; payment processing; sustained soak tests; independently measured RPO/RTO; external penetration testing; CVE/security workflow execution; signed release attestations; SOC 2/ISO audits; and staffed support/SLA delivery.
 
 The local 100-request smoke is deliberately small and uses minimal synthetic traces. Its observed throughput/latency is in `installed-smoke.json`; it is **not** an enterprise capacity benchmark, an availability SLO, or evidence of superiority to another product.
 

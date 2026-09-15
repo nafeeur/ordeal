@@ -59,21 +59,18 @@ class RunnerPolicy:
                     "--evaluator" if evaluator else "--suite", path]
             return argv, None
         name = "ordeal-" + uuid.uuid4().hex
-        if "," in str(self.workspace):
-            raise ExecutionFailure("Docker mount paths containing commas are not supported")
+        if ":" in str(self.workspace):
+            raise ExecutionFailure("Docker mount paths containing colons are not supported")
         argv = ["docker", "run", "--rm", "--name", name, "--network", "none", "--read-only",
-                "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true",
-                # On an SELinux-enforcing host (Fedora/RHEL-family, common for both Docker and
-                # Podman), a bind mount is denied at the MAC layer regardless of Unix file
-                # permissions unless the host path is relabeled or type enforcement is disabled
-                # for this container. Disabling confinement for this one container is simpler
-                # and more portable across Docker/Podman than relabeling the host workspace, and
-                # every other isolation control here (no caps, no network, read-only root,
-                # no-new-privileges) still applies.
-                "--security-opt", "label=disable", "--pids-limit", "128",
+                "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--pids-limit", "128",
                 "--memory", f"{self.memory_mb}m", "--memory-swap", f"{self.memory_mb}m", "--cpus", str(self.cpus),
                 "--user", "65532:65532", "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",  # nosec B108 - docker --tmpfs mount destination, not a host temp-file path
-                "--mount", f"type=bind,src={self.workspace},dst=/workspace,readonly",
+                # The trailing ",z" relabels the mount for container access on an SELinux-enforcing
+                # host (Fedora/RHEL-family, common for both Docker and Podman); on a non-SELinux
+                # host it's a documented no-op. Scoped to this one mount rather than disabling
+                # confinement for the whole container, so every other isolation control here (no
+                # capabilities, no network, read-only root, no-new-privileges) stays fully in effect.
+                "-v", f"{self.workspace}:/workspace:ro,z",
                 "-e", "PYTHONDONTWRITEBYTECODE=1", "-i"]
         for key in extra_env:
             argv.extend(["-e", key])  # Value comes from the child environment, never the process command line.
