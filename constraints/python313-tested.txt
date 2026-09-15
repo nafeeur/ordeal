@@ -31,7 +31,7 @@ pycparser==3.0
 pydantic==2.13.4
 pydantic-core==2.46.4
 pygments==2.20.0
-pyjwt==2.13.0
+pyjwt==2.14.0
 python-dateutil==2.9.0.post0
 referencing==0.37.0
 rich==15.0.0
