@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-server = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "SQLAlchemy>=2.0,<3", "alembic>=1.13,<2", "pydantic>=2.8,<3", "PyJWT[crypto]>=2.9,<3", "cryptography>=43,<48"]
+server = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "SQLAlchemy>=2.0,<3", "alembic>=1.13,<2", "pydantic>=2.8,<3", "PyJWT[crypto]>=2.9,<3", "cryptography>=50,<52"]
 otel = ["opentelemetry-proto>=1.29,<2", "grpcio>=1.65,<2"]
 postgres = ["psycopg[binary]>=3.2,<4"]
 s3 = ["boto3>=1.35,<2"]

@@ -35,6 +35,9 @@ def proxy_callable(tool: Tool, runtime: Any) -> Any:
             )
         )
     invoke.__signature__ = inspect.Signature(parameters, return_annotation=Any)  # type: ignore[attr-defined]
+    # Some frameworks (e.g. autogen_core) read typing.get_type_hints(), which looks at
+    # __annotations__ directly rather than __signature__ — keep both in sync.
+    invoke.__annotations__ = {param.name: param.annotation for param in parameters} | {"return": Any}
     return invoke
 
 
@@ -74,12 +77,24 @@ def proxy_tools(framework: str, tools: list[Tool], runtime: Any) -> list[Any]:
             }
             # Dynamic subclass preserves exact Ordeal name/schema while routing execution back into runtime.
             async_fn = fn
+
+            def forward(self, _fn=async_fn, **kwargs):
+                return _run_sync_proxy(_fn, kwargs)
+
+            # smolagents validates Tool.forward by inspecting its real parameter names
+            # against `inputs`; a generic **kwargs signature fails that check, so give
+            # it an explicit __signature__ naming each input (`self` is auto-dropped
+            # once this function is bound as an instance method).
+            forward.__signature__ = inspect.Signature(
+                [inspect.Parameter("self", inspect.Parameter.POSITIONAL_OR_KEYWORD)]
+                + [inspect.Parameter(key, inspect.Parameter.KEYWORD_ONLY) for key in inputs]
+            )
             attrs = {
                 "name": tool.name,
                 "description": tool.description or tool.name,
                 "inputs": inputs,
                 "output_type": "any",
-                "forward": lambda self, _fn=async_fn, **kwargs: _run_sync_proxy(_fn, kwargs),
+                "forward": forward,
             }
             built.append(type(f"Ordeal_{tool.name}_Tool", (SmolTool,), attrs)())
         return built

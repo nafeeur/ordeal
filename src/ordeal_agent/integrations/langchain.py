@@ -42,4 +42,5 @@ def proxy_tool(tool: Tool, runtime: Any) -> Any:
         coroutine=coroutine,
         name=tool.name,
         description=tool.description or tool.name,
+        args_schema=dict(tool.input_schema),
     )
